@@ -25,7 +25,7 @@ I have a hosted version here: https://secure.slicknfresh.co.uk/nssc/kill-tracks.
 
 
 Example Bookmarklet:
-
+```
 javascript:(function()%7Bvar rnd %3D Math.floor(Math.random()*9999999999)%3Bscrape%3Ddocument.createElement(%27SCRIPT%27)%3Bscrape.type%3D%27text/javascript%27%3Bscrape.id%3D%27nssc-script%27%3Bscrape.src%3D%27https://secure.slicknfresh.co.uk/nssc/kill-tracks.js%3F%27%2Brnd%3Bvar nsscs%3Ddocument.getElementById(%27nssc-script%27)%3Bif (nsscs %3D%3D null)%7Bdocument.getElementsByTagName(%27head%27)%5B0%5D.appendChild(scrape)%3B%3B%7D%7D)()%3B
-
+```
 
