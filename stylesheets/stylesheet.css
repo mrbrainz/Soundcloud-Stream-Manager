@@ -403,3 +403,10 @@ footer a:hover {
   background: #fff;
 }
 
+.benefits li {
+      list-style-position: outside;
+    padding-left: 5px;
+    margin: 0 0 0 38px;
+    list-style-type: square;
+}
+
