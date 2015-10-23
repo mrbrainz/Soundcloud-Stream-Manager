@@ -39,7 +39,7 @@ var nsscBGIMG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALEAAABkCAYAAADJ2
 sccid = 'a7f6658adbea8581e9e9f95b9a82e4ab',
 murkconsole = '<div id="murkconsole" style="position:fixed;top:10px;right:10px; padding: 10px; border: 2px solid orange;z-index:999999;text-align: left;background: #fff;min-width: 285px;">\
 		<div style="background:url(\''+nsscBGIMG+'\') top right no-repeat #fff;padding-bottom:40px;">\
-		<h2 style="margin-bottom: 15px;">Hype Panel <span style="float: right; display:block;padding:2px 5px;border:2px solid #444;background:#efefef;cursor:pointer;" onclick="murkClose();return false;">X</span></h2>\
+		<h2 style="margin-bottom: 15px;">Stream Manager <span style="float: right; display:block;padding:2px 5px;border:2px solid #444;background:#efefef;cursor:pointer;" onclick="murkClose();return false;">X</span></h2>\
 		<p><button onclick="trackKiller();return false;" class="murkupdatestart" title="Kills all tracks before the current track playing, or the tracks above the ones you\'re looking at">Remove Previous Tracks Now</a></button></p>\
 		<p class="murkrp"><input type="checkbox" class="murkupdatestart" title="Removes Repost from your stream in real-time. Only see tracks directly uploaded" onchange="if(this.checked) { window.totalMurkHandler(); }" id="shpmrp" /> Remove Reposts</p>\
 		<p class="murknonrp"><input type="checkbox" class="murkupdatestart" title="Removes Non-Repost from your stream in real-time. Only see reposts" onchange="if(this.checked) { window.totalMurkHandler(); }" id="shpmnrp" /> Remove Normal Posts</p>\

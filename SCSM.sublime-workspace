@@ -1,0 +1,355 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"border-r",
+				"border-radius"
+			],
+			[
+				"in",
+				"inline-block"
+			],
+			[
+				"a",
+				"auto"
+			],
+			[
+				"array_m",
+				"array_merge"
+			],
+			[
+				"tpr",
+				"tpr_event_tracker"
+			],
+			[
+				"di",
+				"display"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"settings":
+			{
+				"buffer_size": 0,
+				"line_ending": "Unix"
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 127.0,
+		"last_filter": "install",
+		"selected_items":
+		[
+			[
+				"install",
+				"Package Control: Install Package"
+			]
+		],
+		"width": 467.0
+	},
+	"console":
+	{
+		"height": 126.0,
+		"history":
+		[
+			"import urllib.request,os,hashlib; h = 'eb2297e1a458f27d836c04bb0cbaf282' + 'd0e7a3098092775ccb37ca9d6b2e4b7d'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)"
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/Users/mrbrainz/Sites/Soundcloud-Hype-Panel"
+	],
+	"file_history":
+	[
+		"/Users/mrbrainz/Sites/TunePushr/css/tpushr.scss",
+		"/Users/mrbrainz/Sites/TunePushr/includes/working-functions.php",
+		"/Users/mrbrainz/Sites/TunePushr/classes/tpr_push.php",
+		"/Users/mrbrainz/Sites/TunePushr/classes/tpr_twitter.php",
+		"/Users/mrbrainz/Sites/TunePushr/classes/tpr_event_tracker.php",
+		"/Users/mrbrainz/Sites/TunePushr/classes/tpr_session_manager.php",
+		"/Users/mrbrainz/Sites/TunePushr/classes/tpr_hype_checker.php",
+		"/Users/mrbrainz/Sites/Soundcloud-Hype-Panel/index.html",
+		"/Users/mrbrainz/Sites/TunePushr/theme/page-test.php",
+		"/Users/mrbrainz/Sites/Mixcloud-Tracklist-Enabler/index.html",
+		"/Users/mrbrainz/Sites/Mixcloud-Tracklist-Enabler/stylesheets/stylesheet.css",
+		"/Users/mrbrainz/Sites/Soundcloud-Hype-Panel/README.md",
+		"/Users/mrbrainz/Sites/Soundcloud-Hype-Panel/hypepanel.js",
+		"/Users/mrbrainz/Sites/TunePushr/theme/app-tab-overview.php",
+		"/Users/mrbrainz/Sites/TunePushr/classes/DBPDO.php",
+		"/Applications/MAMP/bin/php/php5.3.29/conf/php.ini",
+		"/Users/mrbrainz/Sites/phirehose/lib/OauthPhirehose.php",
+		"/Users/mrbrainz/Sites/TunePushr/tpr-ajax.php",
+		"/Users/mrbrainz/Sites/TunePushr/theme/header.php",
+		"/Users/mrbrainz/Sites/TunePushr/testdata/livenowslim.html",
+		"/private/var/folders/h7/56_smkc55pl6bg1b3f47kr9h0000gn/T/fz3temp-1/tprconfig 2.php",
+		"/private/var/folders/h7/56_smkc55pl6bg1b3f47kr9h0000gn/T/fz3temp-1/tprconfig.php",
+		"/private/var/folders/h7/56_smkc55pl6bg1b3f47kr9h0000gn/T/fz3temp-1/.htaccess",
+		"/Users/mrbrainz/Sites/TunePushr/README.md",
+		"/Users/mrbrainz/Sites/TunePushr/includes/setup.php",
+		"/Users/mrbrainz/Sites/TunePushr/js/components/signage.js",
+		"/Users/mrbrainz/Sites/TunePushr/js/components/sending.js",
+		"/Users/mrbrainz/Sites/TunePushr/js/components/general.js",
+		"/Users/mrbrainz/Sites/TunePushr/includes/user.php",
+		"/Users/mrbrainz/Sites/twitteroauth-bcp/README.md",
+		"/Users/mrbrainz/Sites/twitteroauth/composer.json",
+		"/Users/mrbrainz/Sites/TunePushr/classes/twitteroauth/Request.php",
+		"/Users/mrbrainz/Sites/TunePushr/classes/twitteroauth/TwitterOAuth.php",
+		"/Users/mrbrainz/Sites/TunePushr/classes/twitteroauth/Response.php",
+		"/Users/mrbrainz/Sites/TunePushr/classes/twitteroauth/Util.php",
+		"/Users/mrbrainz/Sites/TunePushr/classes/twitteroauth/Config.php",
+		"/Users/mrbrainz/Sites/TunePushr/includes/dbsetup.php",
+		"/Users/mrbrainz/Sites/TunePushr/classes/twitteroauth/TwitterOAuthException.php",
+		"/Users/mrbrainz/Sites/assets/log1.log",
+		"/Users/mrbrainz/Sites/TunePushr/fuckinghell.log",
+		"/Users/mrbrainz/Sites/assets/log2.log",
+		"/Users/mrbrainz/Sites/assets/log3.log",
+		"/Users/mrbrainz/Sites/assets/log4.log",
+		"/Users/mrbrainz/Library/Application Support/Sublime Text 3/Packages/Default/Preferences.sublime-settings",
+		"/Users/mrbrainz/Library/Application Support/Sublime Text 3/Packages/User/Preferences.sublime-settings",
+		"/Users/mrbrainz/Sites/TunePushr/js/components/macros.js",
+		"/Users/mrbrainz/Sites/TunePushr/js/components/playlist.js",
+		"/Users/mrbrainz/Sites/TunePushr/js/components/globalvars.js",
+		"/Users/mrbrainz/Desktop/TunePushr _ TEST.html",
+		"/Users/mrbrainz/Sites/TunePushr/js/components/dynamicimage.js",
+		"/Users/mrbrainz/Sites/TunePushr/js/components/dynamicimageeditor.js",
+		"/Users/mrbrainz/Sites/TunePushr/js/components/npoptions.js",
+		"/Users/mrbrainz/Sites/TunePushr/js/components/dynamicimageloadsave.js",
+		"/Users/mrbrainz/Sites/TunePushr/js/components/timeline.js",
+		"/Users/mrbrainz/Sites/TunePushr/js/components/twitter-general.js",
+		"/Users/mrbrainz/Sites/TunePushr/log.log",
+		"/Users/mrbrainz/Sites/TunePushr/tprconfig.php",
+		"/Users/mrbrainz/Downloads/201509071440-seeing-stars.py",
+		"/Users/mrbrainz/Sites/TunePushr/js/components/tweetcomposer.js",
+		"/Users/mrbrainz/Sites/TunePushr/testdata/livenow.html"
+	],
+	"find":
+	{
+		"height": 25.0
+	},
+	"find_in_files":
+	{
+		"height": 93.0,
+		"where_history":
+		[
+			"/Users/mrbrainz/Sites/TunePushr",
+			"/Users/mrbrainz/Sites/TunePushr/js/components"
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"}\n",
+			"jQuery(el)",
+			"nonrepostMurkReset",
+			"lasthype",
+			"prevsesh",
+			"order",
+			"magic",
+			"$mentions",
+			"$sessionids",
+			"json_decode",
+			"push",
+			"[",
+			"= []",
+			"$args",
+			"$DEEB",
+			"error_log('",
+			".'\n\n',3,BASE.'/fuckinghell.log');",
+			"scroll",
+			"setl",
+			"builddi",
+			"rebuildDIConfig",
+			".draggable",
+			"drag",
+			"remove",
+			"delete",
+			"tpr_saveDItemplate",
+			"ditSave",
+			"saveditemplate",
+			"save",
+			"O:8:\"stdClass\"",
+			"tpr_saveDItemplate",
+			"function rebuildDIConfig",
+			"textAlign",
+			"tprname",
+			"text",
+			"general",
+			"validtypes",
+			"dynamictwi",
+			"startDIworking",
+			"function updateDIText()",
+			"un",
+			"dynamic",
+			"gp =",
+			"atcd =",
+			"opthtml =",
+			"tweetloadwp =",
+			"sfi = ",
+			"auson = ",
+			"udi = ",
+			"dtwitterpos = ",
+			"cdic = "
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+			"el",
+			"= array()",
+			"array()",
+			"$DB",
+			"echo '",
+			";",
+			"textTransform",
+			"date",
+			"validfields",
+			"cdth[dynpos]"
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 0,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 25.0
+	},
+	"input":
+	{
+		"height": 0.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "",
+	"project": "SCSM.sublime-project",
+	"replace":
+	{
+		"height": 46.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 146.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}
