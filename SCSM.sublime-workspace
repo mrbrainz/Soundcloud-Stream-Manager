@@ -32,9 +32,18 @@
 	"buffers":
 	[
 		{
+			"file": "README.md",
 			"settings":
 			{
-				"buffer_size": 0,
+				"buffer_size": 1237,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "index.html",
+			"settings":
+			{
+				"buffer_size": 4356,
 				"line_ending": "Unix"
 			}
 		}
@@ -76,10 +85,15 @@
 	},
 	"expanded_folders":
 	[
-		"/Users/mrbrainz/Sites/Soundcloud-Hype-Panel"
+		"/Users/mrbrainz/Sites/Soundcloud-Hype-Panel",
+		"/Users/mrbrainz/Sites/Soundcloud-Hype-Panel/stylesheets"
 	],
 	"file_history":
 	[
+		"/Users/mrbrainz/Sites/Soundcloud-Hype-Panel/src/scsm-min.js",
+		"/Users/mrbrainz/Sites/Soundcloud-Hype-Panel/stylesheets/stylesheet.css",
+		"/Users/mrbrainz/Sites/Soundcloud-Hype-Panel/index.html",
+		"/Users/mrbrainz/Sites/Soundcloud-Hype-Panel/src/scsm.js",
 		"/Users/mrbrainz/Sites/TunePushr/css/tpushr.scss",
 		"/Users/mrbrainz/Sites/TunePushr/includes/working-functions.php",
 		"/Users/mrbrainz/Sites/TunePushr/classes/tpr_push.php",
@@ -87,7 +101,6 @@
 		"/Users/mrbrainz/Sites/TunePushr/classes/tpr_event_tracker.php",
 		"/Users/mrbrainz/Sites/TunePushr/classes/tpr_session_manager.php",
 		"/Users/mrbrainz/Sites/TunePushr/classes/tpr_hype_checker.php",
-		"/Users/mrbrainz/Sites/Soundcloud-Hype-Panel/index.html",
 		"/Users/mrbrainz/Sites/TunePushr/theme/page-test.php",
 		"/Users/mrbrainz/Sites/Mixcloud-Tracklist-Enabler/index.html",
 		"/Users/mrbrainz/Sites/Mixcloud-Tracklist-Enabler/stylesheets/stylesheet.css",
@@ -237,31 +250,61 @@
 	"groups":
 	[
 		{
-			"selected": 0,
+			"selected": 1,
 			"sheets":
 			[
 				{
 					"buffer": 0,
+					"file": "README.md",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 0,
+						"buffer_size": 1237,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								0,
-								0
+								313,
+								628
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/Text/Plain text.tmLanguage"
+							"color_scheme": "Packages/User/Color Highlighter/themes/Monokai (SL).tmTheme",
+							"syntax": "Packages/Markdown/Markdown.tmLanguage"
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "index.html",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 4356,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1002,
+								1002
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/HTML/HTML.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 18.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
@@ -276,7 +319,7 @@
 	},
 	"input":
 	{
-		"height": 0.0
+		"height": 33.0
 	},
 	"layout":
 	{

@@ -19,13 +19,13 @@ function parseSCDate(tdate) {
     return Math.round(diff / 2592000) + " months";
 }
 
-function isElementInViewport(el) {
+function isElementInViewport(vel) {
 
-    if (typeof jQuery === "function" && el instanceof jQuery) {
-        el = el[0];
+    if (typeof jQuery === "function" && vel instanceof jQuery) {
+        vel = vel[0];
     }
 
-    var rect = el.getBoundingClientRect();
+    var rect = vel.getBoundingClientRect();
 
     return (
         rect.top >= 0 &&
@@ -92,36 +92,36 @@ totalMurkHandler = function() {
 		}
 	}
 },
-repostMurkHandler = function(el) {
-	if (el.find('span.sc-ministats-reposts').length) {
-		el.remove();
+repostMurkHandler = function(rel) {
+	if (rel.find('span.sc-ministats-reposts').length) {
+		rel.remove();
 	}
-	el.addClass('repostMurkHandler');
+	rel.addClass('repostMurkHandler');
 },
-nonrepostMurkHandler = function(el) {
-	if (!el.find('span.sc-ministats-reposts').length) {
-		el.remove();
+nonrepostMurkHandler = function(npel) {
+	if (!npel.find('span.sc-ministats-reposts').length) {
+		npel.remove();
 	}
-	el.addClass('nonrepostMurkHandler');
+	npel.addClass('nonrepostMurkHandler');
 },
-shpDateUpdate = function(el) {
+shpDateUpdate = function(del) {
 
-	el.addClass('shpDateUpdate');
+	del.addClass('shpDateUpdate');
 		
-	if ( el.find('span.sc-ministats-reposts').length ) {
+	if ( del.find('span.sc-ministats-reposts').length ) {
 
-		el.addClass('shpDateUpdated');
+		del.addClass('shpDateUpdated');
 
-		var timespan = el.find('.sound__uploadTime'),
+		var timespan = del.find('.sound__uploadTime'),
 		tdt = '';
 
-		if ( !el.attr('data-uploadtime') ) {
-			var track = 'https://api.soundcloud.com/resolve.json?url='+encodeURI('https://soundcloud.com'+el.find('.sound__coverArt').attr('href'))+'&client_id='+sccid;
+		if ( !del.attr('data-uploadtime') ) {
+			var track = 'https://api.soundcloud.com/resolve.json?url='+encodeURI('https://soundcloud.com'+del.find('.sound__coverArt').attr('href'))+'&client_id='+sccid;
 			
 			$.get(track, function (result) {
 				tdt = result.created_at;
-				el.attr('data-uploadtime',result.created_at);
-				el.attr('data-duration',result.duration);
+				del.attr('data-uploadtime',result.created_at);
+				del.attr('data-duration',result.duration);
 				var dt = new Date(tdt),
 				but = '<div class="sound__uploadTime brainzuploadtime"><span class="relativeTime" datetime="'+dt.toISOString()+'"><span class="rp-time">'+timespan.find('.sc-visuallyhidden').text()+' | </span><span class="actual-time" style="color:#000;">'+parseSCDate(dt)+'</span></span></div>';
 				timespan.hide().after(but);
@@ -129,7 +129,7 @@ shpDateUpdate = function(el) {
 			});
 
 		} else {
-			tdt = el.attr('data-uploadtime');
+			tdt = del.attr('data-uploadtime');
 			var dt = new Date(tdt),
 			but = '<div class="sound__uploadTime brainzuploadtime"><span class="relativeTime" datetime="'+dt.toISOString()+'"><span class="rp-time">'+timespan.find('.sc-visuallyhidden').text()+' | </span><span class="actual-time" style="color:#000;">'+parseSCDate(dt)+'</span></span></div>';
 			timespan.hide().after(but);
@@ -138,62 +138,62 @@ shpDateUpdate = function(el) {
 	}
 
 },
-shpKillMixes = function(el) {
-	if (!el.attr('data-duration')) {
+shpKillMixes = function(kmel) {
+	if (!kmel.attr('data-duration')) {
 
-		var track = 'https://api.soundcloud.com/resolve.json?url='+encodeURI('https://soundcloud.com'+el.find('.sound__coverArt').attr('href'))+'&client_id='+sccid;
+		var track = 'https://api.soundcloud.com/resolve.json?url='+encodeURI('https://soundcloud.com'+kmel.find('.sound__coverArt').attr('href'))+'&client_id='+sccid;
 		$.get(track, function (result) {
-			el.attr('data-uploadtime',result.created_at);
-			el.attr('data-duration',result.duration);
-			window.shpKillMix(el,el.data('duration'));
+			kmel.attr('data-uploadtime',result.created_at);
+			kmel.attr('data-duration',result.duration);
+			window.shpKillMix(kmel,kmel.data('duration'));
 			return;
 		});
 	} else {
-		window.shpKillMix(el,el.attr('data-duration'));
+		window.shpKillMix(kmel,kmel.attr('data-duration'));
 	}
-	el.addClass('shpKillMixes');
+	kmel.addClass('shpKillMixes');
 },
-shpKillMix = function(el,d) {
+shpKillMix = function(kel,d) {
 	if (d > shpMixDuration*60*1000) {
-		el.remove();
+		kel.remove();
 	}
 },
-shpKillWanking = function(el) {
-	if ( el.find('span.sc-ministats-reposts').length ) {
-		if (!el.attr('data-uploadtime')) {
-			var track = 'https://api.soundcloud.com/resolve.json?url='+encodeURI('https://soundcloud.com'+el.find('.sound__coverArt').attr('href'))+'&client_id='+sccid;
+shpKillWanking = function(wel) {
+	if ( wel.find('span.sc-ministats-reposts').length ) {
+		if (!wel.attr('data-uploadtime')) {
+			var track = 'https://api.soundcloud.com/resolve.json?url='+encodeURI('https://soundcloud.com'+wel.find('.sound__coverArt').attr('href'))+'&client_id='+sccid;
 			$.get(track, 
 			function (result) {
-				el.attr('data-uploadtime',result.created_at);
-				el.attr('data-duration',result.duration);
-				window.shpKillWanker(el,result.created_at);
+				wel.attr('data-uploadtime',result.created_at);
+				wel.attr('data-duration',result.duration);
+				window.shpKillWanker(wel,result.created_at);
 				return;
 			});
 		} else {
-			window.shpKillWanker(el,el.attr('data-uploadtime'));
+			window.shpKillWanker(wel,wel.attr('data-uploadtime'));
 		}
 	} 
 
-	el.addClass('shpKillWanking');
+	wel.addClass('shpKillWanking');
 
 },
-shpKillWanker = function(el,d) {
+shpKillWanker = function(kwel,d) {
 	var system_date = new Date(Date.parse(d)),
     user_date = new Date(),
     diff = Math.floor((user_date - system_date) / 1000);
     if (diff > shpMasturbationWindow * 60 * 60 * 24) {
-    	el.remove();
+    	kwel.remove();
     }
 },
-shpModLinks = function(el) {
-	el.attr('target','_blank');
-	el.click(function(e) {
-		if (el.attr('target') === '_blank') {
+shpModLinks = function(mel) {
+	mel.attr('target','_blank');
+	mel.click(function(e) {
+		if (mel.attr('target') === '_blank') {
 			e.preventDefault();
-			window.open(el.attr('href'), '_blank');
+			window.open(mel.attr('href'), '_blank');
 		}
 	});
-	el.addClass('shpModLinks');
+	mel.addClass('shpModLinks');
 },
 shpUnmodLinks = function() {
 	jQuery('a.shpModLinks').removeAttr('target').removeClass('shpModLinks');
