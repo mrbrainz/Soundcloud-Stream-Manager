@@ -123,7 +123,7 @@ shpDateUpdate = function(del) {
                 del.attr('data-uploadtime',result.created_at);
                 del.attr('data-duration',result.duration);
                 var dt = new Date(tdt);
-                but = '<span class="sound__uploadTime brainzuploadtime"><span class="relativeTime" datetime="'+dt.toISOString()+'"><span class="rp-time">'+timespan.find('.sc-visuallyhidden').text()+' | </span><span class="actual-time" style="color:#000;">'+parseSCDate(dt)+'</span></span></span>';
+                but = '<span class="brainzuploadtime"><span class="relativeTime" datetime="'+dt.toISOString()+'"><span class="rp-time">'+timespan.find('span:not(".sc-visuallyhidden")').text()+' ago | </span><span class="actual-time" style="color:#000;">Posted '+parseSCDate(dt)+'</span></span></span>';
                 timespan.hide().after(but);
                 return;
             });
@@ -131,7 +131,7 @@ shpDateUpdate = function(del) {
         } else {
             tdt = del.attr('data-uploadtime');
             var dt = new Date(tdt);
-            but = '<span class="sound__uploadTime brainzuploadtime"><span class="relativeTime" datetime="'+dt.toISOString()+'"><span class="rp-time">'+timespan.find('.sc-visuallyhidden').text()+' | </span><span class="actual-time" style="color:#000;">'+parseSCDate(dt)+'</span></span></span>';
+            but = '<span class="brainzuploadtime"><span class="relativeTime" datetime="'+dt.toISOString()+'"><span class="rp-time">'+timespan.find('span:not(".sc-visuallyhidden")').text()+' ago | </span><span class="actual-time" style="color:#000;">Posted '+parseSCDate(dt)+'</span></span></span>';
             timespan.hide().after(but);
         }
 
