@@ -111,8 +111,9 @@ shpDateUpdate = function(del) {
     if ( del.find('span.sc-ministats-reposts').length ) {
         del.addClass('shpDateUpdated');
 
-        var timespan = del.find('.sound__uploadTime'),
-        tdt = '';
+        var timespan = del.find('.relativeTime'),
+        tdt = '',
+        but = '';
 
         if ( !del.attr('data-uploadtime') ) {
             var track = 'https://api.soundcloud.com/resolve.json?url='+encodeURI('https://soundcloud.com'+del.find('.sound__coverArt').attr('href'))+'&client_id='+sccid;
@@ -121,16 +122,16 @@ shpDateUpdate = function(del) {
                 tdt = result.created_at;
                 del.attr('data-uploadtime',result.created_at);
                 del.attr('data-duration',result.duration);
-                var dt = new Date(tdt),
-                but = '<div class="sound__uploadTime brainzuploadtime"><span class="relativeTime" datetime="'+dt.toISOString()+'"><span class="rp-time">'+timespan.find('.sc-visuallyhidden').text()+' | </span><span class="actual-time" style="color:#000;">'+parseSCDate(dt)+'</span></span></div>';
+                var dt = new Date(tdt);
+                but = '<span class="sound__uploadTime brainzuploadtime"><span class="relativeTime" datetime="'+dt.toISOString()+'"><span class="rp-time">'+timespan.find('.sc-visuallyhidden').text()+' | </span><span class="actual-time" style="color:#000;">'+parseSCDate(dt)+'</span></span></span>';
                 timespan.hide().after(but);
                 return;
             });
 
         } else {
             tdt = del.attr('data-uploadtime');
-            var dt = new Date(tdt),
-            but = '<div class="sound__uploadTime brainzuploadtime"><span class="relativeTime" datetime="'+dt.toISOString()+'"><span class="rp-time">'+timespan.find('.sc-visuallyhidden').text()+' | </span><span class="actual-time" style="color:#000;">'+parseSCDate(dt)+'</span></span></div>';
+            var dt = new Date(tdt);
+            but = '<span class="sound__uploadTime brainzuploadtime"><span class="relativeTime" datetime="'+dt.toISOString()+'"><span class="rp-time">'+timespan.find('.sc-visuallyhidden').text()+' | </span><span class="actual-time" style="color:#000;">'+parseSCDate(dt)+'</span></span></span>';
             timespan.hide().after(but);
         }
 
