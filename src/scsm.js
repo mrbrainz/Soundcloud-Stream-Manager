@@ -43,10 +43,11 @@ murkconsole = '<div id="murkconsole" style="position:absolute;top:-16px;left:0px
         <p><button onclick="trackKiller();return false;" class="murkupdatestart" title="Kills all tracks before the current track playing, or the tracks above the ones you\'re looking at">Remove Previous Tracks Now</a></button></p>\
         <p class="murkrp"><input type="checkbox" class="murkupdatestart" title="Removes Repost from your stream in real-time. Only see tracks directly uploaded" onchange="if(this.checked) { window.totalMurkHandler(); }" id="shpmrp" /> Remove Reposts</p>\
         <p class="murknonrp"><input type="checkbox" class="murkupdatestart" title="Removes Non-Repost from your stream in real-time. Only see reposts" onchange="if(this.checked) { window.totalMurkHandler(); }" id="shpmnrp" /> Remove Normal Posts</p>\
+        <p class="murknondl"><input type="checkbox" class="murkupdatestart" title="Removes tracks that do not have a download available" onchange="if(this.checked) { window.totalMurkHandler(); }" id="shposdl" /> Only Show Tracks With Native Downloads</p>\
         <p class="showtruetimes"><input type="checkbox" onchange="if(!this.checked) {window.shpDateRevert();} else { window.totalMurkHandler(); }" class="murkbox" id="shpstt" /> Show True Times on Reposts</p>\
-        <p class="showtruetimes"><input type="checkbox"  onchange="if(!this.checked) {window.shpUnmodLinks();} else { window.totalMurkHandler(); }" class="murkbox" id="shpnw" /> Force Links To New Windows</p>\
-        <p class="showtruetimes"><input type="checkbox"  class="murkbox" id="shpkillmixes" onchange="if(this.checked) { window.totalMurkHandler(); }" /> Kill Tracks Longer Than <input type="number" value="25" id="shpmixlength" style="width:30px;" /> Minutes</p>\
-        <p class="showtruetimes"><input type="checkbox" class="murkbox" id="shpkillwanking" onchange="if(this.checked) { window.totalMurkHandler(); }" /> Kill Tracks Older Than <input type="number" value="15" id="shpmasturbatelength" style="width:30px;" /> Days</p>\
+        <p class="forcenewwindow"><input type="checkbox"  onchange="if(!this.checked) {window.shpUnmodLinks();} else { window.totalMurkHandler(); }" class="murkbox" id="shpnw" /> Force Links To New Windows</p>\
+        <p class="mixremove"><input type="checkbox"  class="murkbox" id="shpkillmixes" onchange="if(this.checked) { window.totalMurkHandler(); }" /> Kill Tracks Longer Than <input type="number" value="25" id="shpmixlength" style="width:30px;" /> Minutes</p>\
+        <p class="killwanking"><input type="checkbox" class="murkbox" id="shpkillwanking" onchange="if(this.checked) { window.totalMurkHandler(); }" /> Kill Tracks Older Than <input type="number" value="15" id="shpmasturbatelength" style="width:30px;" /> Days</p>\
     </div>\
 </div>',
 deadoutconsole = '<div id="murkconsole" style="position:fixed;top:10px;right:10px; padding: 10px; border: 2px solid orange;z-index:999999;text-align: left;background: #fff;min-width: 50px;">\
@@ -56,6 +57,7 @@ jqsrc = '//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js',
 shpActionList = {
     shpmrp:'repostMurkHandler',
     shpmnrp:'nonrepostMurkHandler',
+    shposdl:'onlyShowDownloads',
     shpstt:'shpDateUpdate',
     shpnw:'shpModLinks',
     shpkillmixes:'shpKillMixes',
@@ -63,7 +65,7 @@ shpActionList = {
 },
 shpMixDuration = 25,
 shpMasturbationWindow = 15,
-murkConsoleHeight = 255,
+murkConsoleHeight = 268,
 shpGetActions = function() {
     var actions = {};
     for (var a in shpActionList) {
@@ -104,6 +106,12 @@ nonrepostMurkHandler = function(npel) {
         npel.remove();
     }
     npel.addClass('nonrepostMurkHandler');
+},
+onlyShowDownloads = function(dlel) {
+    if (!dlel.find('a.sc-button-download').length) {
+        dlel.remove();
+    }
+    dlel.addClass('onlyShowDownloads');
 },
 shpDateUpdate = function(del) {
     var inst = Math.floor(Math.random()*9999999999);
