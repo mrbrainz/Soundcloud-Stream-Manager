@@ -67,7 +67,7 @@ shpActionList = {
 },
 shpMixDuration = 25,
 shpMasturbationWindow = 15,
-murkConsoleHeight = 289,
+murkConsoleHeight = 299,
 shpGetActions = function() {
     var actions = {};
     for (var a in shpActionList) {
@@ -310,8 +310,8 @@ function fixMurk() {
     pos = s.position(),
     spos = jQuery('.l-sidebar-right').offset(),
     sw = jQuery('.l-sidebar-right').width();   
-    if (windowpos  +47 >= pos.top) {
-        s.css({'position':'fixed','left':spos.left,'top':47,'width':sw});
+    if (windowpos  +46 >= pos.top) {
+        s.css({'position':'fixed','left':spos.left,'top':46,'width':sw});
     } else {
         s.css({'position':'absolute','left':'0','top':-16,'width':'100%'});
     }
