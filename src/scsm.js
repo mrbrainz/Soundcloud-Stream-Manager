@@ -98,24 +98,36 @@ totalMurkHandler = function() {
     }
 },
 repostMurkHandler = function(rel) {
+	if (rel.hasClass('repostMurkHandler')) {
+		return;
+	}
     if (rel.find('span.sc-ministats-reposts').length) {
         rel.remove();
     }
     rel.addClass('repostMurkHandler');
 },
 nonrepostMurkHandler = function(npel) {
+	if (npel.hasClass('nonrepostMurkHandler')) {
+		return;
+	}
     if (!npel.find('span.sc-ministats-reposts').length) {
         npel.remove();
     }
     npel.addClass('nonrepostMurkHandler');
 },
 onlyShowDownloads = function(dlel) {
+	if (dlel.hasClass('onlyShowDownloads')) {
+		return;
+	}
     if (!dlel.find('a.sc-button-download').length) {
         dlel.remove();
     }
     dlel.addClass('onlyShowDownloads');
 },
 shpDateUpdate = function(del) {
+	if (del.hasClass('shpDateUpdate')) {
+		return;
+	}
     var inst = Math.floor(Math.random()*9999999999);
     del.addClass('shpDateUpdate');
         
@@ -150,6 +162,10 @@ shpDateUpdate = function(del) {
 
 },
 shpKillMixes = function(kmel) {
+	if (kmel.hasClass('shpKillMixes')) {
+		return;
+	}
+	kmel.addClass('shpKillMixes');
     if (!kmel.attr('data-duration')) {
 
         var track = 'https://api.soundcloud.com/resolve.json?url='+encodeURI('https://soundcloud.com'+kmel.find('.sound__coverArt').attr('href'))+'&client_id='+sccid;
@@ -162,7 +178,6 @@ shpKillMixes = function(kmel) {
     } else {
         window.shpKillMix(kmel,kmel.attr('data-duration'));
     }
-    kmel.addClass('shpKillMixes');
 },
 shpKillMix = function(kel,d) {
     if (d > shpMixDuration*60*1000) {
@@ -170,6 +185,10 @@ shpKillMix = function(kel,d) {
     }
 },
 shpKillWanking = function(wel) {
+	if (wel.hasClass('shpKillWanking')) {
+		return;
+	}
+	wel.addClass('shpKillWanking');
     if ( wel.find('span.sc-ministats-reposts').length ) {
         if (!wel.attr('data-uploadtime')) {
             var track = 'https://api.soundcloud.com/resolve.json?url='+encodeURI('https://soundcloud.com'+wel.find('.sound__coverArt').attr('href'))+'&client_id='+sccid;
@@ -184,9 +203,6 @@ shpKillWanking = function(wel) {
             window.shpKillWanker(wel,wel.attr('data-uploadtime'));
         }
     } 
-
-    wel.addClass('shpKillWanking');
-
 },
 shpKillWanker = function(kwel,d) {
     var system_date = new Date(Date.parse(d)),
@@ -197,6 +213,10 @@ shpKillWanker = function(kwel,d) {
     }
 },
 shpModLinks = function(mel) {
+	if (mel.hasClass('shpModLinks')) {
+		return;
+	}
+	mel.addClass('shpModLinks');
     mel.attr('target','_blank');
     mel.click(function(e) {
         if (mel.attr('target') === '_blank') {
@@ -204,19 +224,21 @@ shpModLinks = function(mel) {
             window.open(mel.attr('href'), '_blank');
         }
     });
-    mel.addClass('shpModLinks');
 },
 shpUnmodLinks = function() {
     jQuery('a.shpModLinks').removeAttr('target').removeClass('shpModLinks');
 },
-shpReplaceDL = function(dlel) {
-	dlel.addClass('shpReplaceDL');
-	var track = 'https://api.soundcloud.com/resolve.json?url='+encodeURI('https://soundcloud.com'+dlel.find('.sound__coverArt').attr('href'))+'&client_id='+sccid;
+shpReplaceDL = function(dlbel) {
+	if (dlbel.hasClass('shpReplaceDL')) {
+		return;
+	}
+	dlbel.addClass('shpReplaceDL');
+	var track = 'https://api.soundcloud.com/resolve.json?url='+encodeURI('https://soundcloud.com'+dlbel.find('.sound__coverArt').attr('href'))+'&client_id='+sccid;
             $.get(track, 
             function (result) {
             	if (result.downloadable) {
 	                var dlButton = '<button class="sc-button-download sc-button sc-button-small sc-button-responsive" aria-describedby="tooltip-597" tabindex="0"  role="button" title="Download" onclick="window.location = \''+result.download_url+'?client_id='+sccid+'\'">Download</button>';
-	                dlel.find('.sc-button-more').before(dlButton);
+	                dlbel.find('.sc-button-more').before(dlButton);
 	            }
                 return;
             });
