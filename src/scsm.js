@@ -67,7 +67,7 @@ shpActionList = {
 },
 shpMixDuration = 25,
 shpMasturbationWindow = 15,
-murkConsoleHeight = 299,
+murkConsoleHeight = 309,
 shpGetActions = function() {
     var actions = {};
     for (var a in shpActionList) {
