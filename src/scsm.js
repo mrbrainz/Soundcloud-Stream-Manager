@@ -210,6 +210,7 @@ shpUnmodLinks = function() {
     jQuery('a.shpModLinks').removeAttr('target').removeClass('shpModLinks');
 },
 shpReplaceDL = function(dlel) {
+	dlel.addClass('shpReplaceDL');
 	var track = 'https://api.soundcloud.com/resolve.json?url='+encodeURI('https://soundcloud.com'+dlel.find('.sound__coverArt').attr('href'))+'&client_id='+sccid;
             $.get(track, 
             function (result) {
