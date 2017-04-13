@@ -149,8 +149,8 @@
 		"ft": 64,
 		"mi": 1,
 		"oA": 0,
-		"oAP": "\/src\/min\/scsm-min.js",
-		"oF": 0,
+		"oAP": "\/src\/scsm-min.js",
+		"oF": 2,
 		"sC": 1,
 		"tS": 0
 		},
