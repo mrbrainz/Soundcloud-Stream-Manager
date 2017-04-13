@@ -48,6 +48,7 @@ murkconsole = '<div id="murkconsole" style="position:absolute;top:-16px;left:0px
         <p class="forcenewwindow"><input type="checkbox"  onchange="if(!this.checked) {window.shpUnmodLinks();} else { window.totalMurkHandler(); }" class="murkbox" id="shpnw" /> Force Links To New Windows</p>\
         <p class="mixremove"><input type="checkbox"  class="murkbox" id="shpkillmixes" onchange="if(this.checked) { window.totalMurkHandler(); }" /> Kill Tracks Longer Than <input type="number" value="25" id="shpmixlength" style="width:30px;" /> Minutes</p>\
         <p class="killwanking"><input type="checkbox" class="murkbox" id="shpkillwanking" onchange="if(this.checked) { window.totalMurkHandler(); }" /> Kill Tracks Older Than <input type="number" value="15" id="shpmasturbatelength" style="width:30px;" /> Days</p>\
+        <p class="gimmebackdl"><input type="checkbox"  onchange="if(this.checked) { window.totalMurkHandler(); }" class="murkbox" id="shpreplacedl" /> Enable Legacy Download Button</p>\
     </div>\
 </div>',
 deadoutconsole = '<div id="murkconsole" style="position:fixed;top:10px;right:10px; padding: 10px; border: 2px solid orange;z-index:999999;text-align: left;background: #fff;min-width: 50px;">\
@@ -61,7 +62,8 @@ shpActionList = {
     shpstt:'shpDateUpdate',
     shpnw:'shpModLinks',
     shpkillmixes:'shpKillMixes',
-    shpkillwanking:'shpKillWanking'
+    shpkillwanking:'shpKillWanking',
+    shpreplacedl:'shpReplaceDL'
 },
 shpMixDuration = 25,
 shpMasturbationWindow = 15,
@@ -207,6 +209,16 @@ shpModLinks = function(mel) {
 shpUnmodLinks = function() {
     jQuery('a.shpModLinks').removeAttr('target').removeClass('shpModLinks');
 },
+shpReplaceDL = function(dlel) {
+	var track = 'https://api.soundcloud.com/resolve.json?url='+encodeURI('https://soundcloud.com'+dlel.find('.sound__coverArt').attr('href'))+'&client_id='+sccid;
+            $.get(track, 
+            function (result) {
+                var dlButton = '<button class="sc-button-download sc-button sc-button-small sc-button-responsive" aria-describedby="tooltip-597" tabindex="0"  role="button" title="Download" onclick="window.location = \''+result.download_url+'?client_id='+sccid+'\'">Download</button>';
+                dlel.find('.sc-button-more').before(dlButton);
+                return;
+            });
+	
+},
 shpDateRevert = function() {
     jQuery('.shpDateUpdated .brainzuploadtime').remove();
     jQuery('.shpDateUpdated .sound__uploadTime').show();
@@ -323,11 +335,11 @@ function startmurk() {
                 
             }             
             jQuery(window).scroll(function() {
-                fixMurk()
+                fixMurk();
             });
 
             jQuery(window).resize(function() {
-                fixMurk()
+                fixMurk();
             });
         
         }); 
