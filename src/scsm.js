@@ -46,6 +46,7 @@ murkconsole = '<div id="murkconsole" style="position:absolute;top:-30px;left:0px
         <p class="murknondl"><input type="checkbox" class="murkupdatestart" title="Removes tracks that do not have a download available" onchange="if(this.checked) { window.totalMurkHandler(); }" id="shposdl" /> Only Show Tracks With Native Downloads</p>\
         <p class="showtruetimes"><input type="checkbox" onchange="if(!this.checked) {window.shpDateRevert();} else { window.totalMurkHandler(); }" class="murkbox" id="shpstt" /> Show True Times on Reposts</p>\
         <p class="forcenewwindow"><input type="checkbox"  onchange="if(!this.checked) {window.shpUnmodLinks();} else { window.totalMurkHandler(); }" class="murkbox" id="shpnw" /> Force Links To New Windows</p>\
+        <p class="shortremove"><input type="checkbox"  class="murkbox" id="shpkillshorts" onchange="if(this.checked) { window.totalMurkHandler(); }" /> Kill Tracks Shorter Than <input type="number" value="0" id="shpshortlength" style="width:30px;" /> Minutes</p>\
         <p class="mixremove"><input type="checkbox"  class="murkbox" id="shpkillmixes" onchange="if(this.checked) { window.totalMurkHandler(); }" /> Kill Tracks Longer Than <input type="number" value="25" id="shpmixlength" style="width:30px;" /> Minutes</p>\
         <p class="killwanking"><input type="checkbox" class="murkbox" id="shpkillwanking" onchange="if(this.checked) { window.totalMurkHandler(); }" /> Kill Tracks Older Than <input type="number" value="15" id="shpmasturbatelength" style="width:30px;" /> Days</p>\
         <p class="gimmebackdl"><input type="checkbox"  onchange="if(this.checked) { window.totalMurkHandler(); }" class="murkbox" id="shpreplacedl" /> Enable Legacy Download Button</p>\
@@ -61,13 +62,15 @@ shpActionList = {
     shposdl:'onlyShowDownloads',
     shpstt:'shpDateUpdate',
     shpnw:'shpModLinks',
+    shpkillshorts:'shpKillShorts',
     shpkillmixes:'shpKillMixes',
     shpkillwanking:'shpKillWanking',
     shpreplacedl:'shpReplaceDL'
 },
 shpMixDuration = 25,
+shpShortDuration = 0,
 shpMasturbationWindow = 15,
-murkConsoleHeight = 309,
+murkConsoleHeight = 335,
 shpGetActions = function() {
     var actions = {};
     for (var a in shpActionList) {
@@ -81,6 +84,9 @@ totalMurkHandler = function() {
     var shpactions = window.shpGetActions();
     if (shpactions.shpKillMixes) {
         shpMixDuration = jQuery('#shpmixlength').val();
+    }
+    if (shpactions.shpKillShorts) {
+        shpShortDuration = jQuery('#shpshortlength').val();
     }
     if (shpactions.shpKillWanking) {
         shpMasturbationWindow = jQuery('#shpmasturbatelength').val();
@@ -119,10 +125,26 @@ onlyShowDownloads = function(dlel) {
 	if (dlel.hasClass('onlyShowDownloads')) {
 		return;
 	}
-    if (!dlel.find('a.sc-button-download').length) {
-        dlel.remove();
-    }
     dlel.addClass('onlyShowDownloads');
+    if (dlel.hasClass('shpReplaceDL')) {
+        
+        if (dlel.data('downloadable') === "false") {
+            dlel.remove();
+        }
+    } else {
+        var track = 'https://api.soundcloud.com/resolve.json?url='+encodeURI('https://soundcloud.com'+dlel.find('.sound__coverArt').attr('href'))+'&client_id='+sccid;
+            $.get(track, 
+            function (result) {
+                if (result.downloadable) {
+                    dlel.attr('data-downloadable',"true");
+                } else {
+                    dlel.attr('data-downloadable',"false");
+                    dlel.remove();
+                }
+                return;
+            });
+    }
+    
 },
 shpDateUpdate = function(del) {
 	if (del.hasClass('shpDateUpdate')) {
@@ -184,6 +206,29 @@ shpKillMix = function(kel,d) {
         kel.remove();
     }
 },
+shpKillShorts = function(kmel) {
+    if (kmel.hasClass('shpKillShorts')) {
+        return;
+    }
+    kmel.addClass('shpKillShorts');
+    if (!kmel.attr('data-duration')) {
+
+        var track = 'https://api.soundcloud.com/resolve.json?url='+encodeURI('https://soundcloud.com'+kmel.find('.sound__coverArt').attr('href'))+'&client_id='+sccid;
+        $.get(track, function (result) {
+            kmel.attr('data-uploadtime',result.created_at);
+            kmel.attr('data-duration',result.duration);
+            window.shpKillShort(kmel,kmel.data('duration'));
+            return;
+        });
+    } else {
+        window.shpKillShort(kmel,kmel.attr('data-duration'));
+    }
+},
+shpKillShort = function(kel,d) {
+    if (shpShortDuration !== 0 && d < shpShortDuration*60*1000) {
+        kel.remove();
+    }
+},
 shpKillWanking = function(wel) {
 	if (wel.hasClass('shpKillWanking')) {
 		return;
@@ -239,7 +284,10 @@ shpReplaceDL = function(dlbel) {
             	if (result.downloadable) {
 	                var dlButton = '<button class="sc-button-download sc-button sc-button-small sc-button-responsive" aria-describedby="tooltip-597" tabindex="0"  role="button" title="Download" onclick="window.location = \''+result.download_url+'?client_id='+sccid+'\'">Download</button>';
 	                dlbel.find('.sc-button-more').before(dlButton);
-	            }
+                    dlbel.attr('data-downloadable',"true");
+	            } else {
+                    dlbel.attr('data-downloadable',"false");
+                }
                 return;
             });
 	
