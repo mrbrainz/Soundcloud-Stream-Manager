@@ -38,6 +38,11 @@ function isElementInViewport(vel) {
 function copyNowPlayingToClipboard() {
   var nowPlayingURL = 'https://soundcloud.com'+$(".playControls .playControls__soundBadge .playbackSoundBadge__titleLink").attr("href"),
   inputfield = document.getElementById("ssmctc");
+
+  if (nowPlayingURL.indexOf('?') !== -1) {
+    nowPlayingURL = nowPlayingURL.split("?")[0];
+  }
+
   inputfield.value = nowPlayingURL;
   inputfield.style.display = "block";
   inputfield.select();
