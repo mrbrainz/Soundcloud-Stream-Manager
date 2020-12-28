@@ -60,6 +60,7 @@ murkconsole = '<div id="murkconsole" style="position:absolute;top:-30px;left:0px
           <span style="float: right; display:block;padding:2px 5px;border:1px solid #444;background:#efefef;cursor:pointer;font-size:12px;" onclick="murkCloseGraceful();return false;" title="Close">X</span> \
           <span style="float: right; display:block;padding:2px 5px;border:1px solid #444;background:#efefef;cursor:pointer;font-size:12px;margin-right: 5px;" onclick="murkMinimize(this);return false;" title="Minimize">_</span> \
           <span style="float: right; display:block;padding:0px 6px;border:1px solid #999;background:#00B3A6;cursor:pointer;font-size:19px;margin-right: 20px;color: #fff;border-radius: 13px; margin-top: -3px;" onclick="copyNowPlayingToClipboard();return false;" title="Copy Now Playing To Keyboard">&#x2398;</span> \
+          <span class="skipControl sc-ir playControls__control playControls__next skipControl__next" style="float: right; height: 10px; width: 10px; margin-top: 6px; margin-right: 9px; cursor: pointer;" onclick="ssmPlayNext(); return false;">Skip to next</span>\
         </h2>\
         <p><button onclick="trackKiller();return false;" class="murkupdatestart" title="Kills all tracks before the current track playing, or the tracks above the ones you\'re looking at">Remove Previous Tracks Now</a></button></p>\
         <p class="murkrp"><input type="checkbox" class="murkupdatestart" title="Removes Repost from your stream in real-time. Only see tracks directly uploaded" onchange="if(this.checked) { window.totalMurkHandler(); }" id="shpmrp" /> Remove Reposts</p>\
@@ -280,7 +281,7 @@ shpKillWanker = function(kwel,d) {
     }
 },
 shpModLinks = function(mel) {
-	if (mel.hasClass('shpModLinks')) {
+	if (mel.hasClass('shpModLinks') || mel.hasClass('playButton')) {
 		return;
 	}
 	mel.addClass('shpModLinks');
@@ -393,6 +394,31 @@ function trackKiller() {
             jQuery(this).remove();
         }
     });
+}
+
+function ssmPlayNext() {
+  var np = jQuery('div.waveform.playing').length;
+  if (np) {
+    np = jQuery('div.waveform.playing');
+    np = np.closest("li");
+    var nextTrack = jQuery(np).nextAll('li:visible').first(),
+    // clickTarget = jQuery(nextTrack).find(".waveform .waveform__layer canvas:last"),
+    clickTarget = jQuery(nextTrack).find(".playButton"),
+    npoffset = jQuery(clickTarget).offset();
+
+
+    npoffset.left -= 20;
+    npoffset.top -= 64;
+
+    clickTarget[0].click();
+
+    jQuery('html, body').animate({
+        scrollTop: npoffset.top,
+        scrollLeft: npoffset.left
+    });
+
+
+  }
 }
 
 function fixMurk() {
