@@ -1,0 +1,90 @@
+body.hidebanners #tempo-data-center-banner, body.hidebanners #announcement-banner {
+	display: none!important;
+}
+
+form.aui .opsbar-opsbar-gmtemplates { 
+	padding: 4px 0 4px 145px; 
+}
+
+#template-inject {
+	width: 710px; 
+	margin-left: -271px; 
+	margin-top: -134.5px;
+}
+
+#template-inject .form-body {
+	max-height: 296px;
+}
+
+#template-inject .buttons {
+	float:left;margin: 20px 0;
+}
+
+#template-inject.jira-dialog .jira-dialog-heading {
+	height: 75px;
+	line-height: 1;
+}
+
+#template-inject h5 {
+	margin: 0 0 10px;
+}
+
+#template-inject .lux-template {
+	border: 1px solid #ccc;
+	padding: 5px;
+	border-collapse: collapse;
+	border-width: 0 1px 1px;
+}
+
+#template-inject .lux-template.selected, #template-inject .lux-template:hover {
+	border: 1px solid #777;
+	background: #efefef;
+	box-shadow: 3px 3px #777;
+	border-width: 0 1px 1px;
+}
+
+html body #template-inject .lux-template:first-child {
+	border-width: 1px;
+}
+
+body #template-inject .lux-template:hover {
+	background: #ddd;
+	cursor: pointer;
+}
+body #template-inject #am-template-list {
+	margin-right: 9%;
+    float: left;
+    width: 45%;
+    height: 220px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+body #template-inject #am-template-preview {
+	float: left;
+    width: 45%;
+    height: 220px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px solid #efefef;
+}
+
+
+body #template-inject .buttons {
+	clear: both;
+}
+
+#am-ad p {
+	text-align: right;
+}
+
+
+
+body.meteor-issue #issue-content {
+	background: url(chrome-extension://__MSG_@@extension_id__/images/meteor-bg.png) right top no-repeat;
+}
+
+body.meteor-issue .issue-view>.issue-container .issue-header, body.meteor-issue .issue-header .issue-header-content>.command-bar, body.meteor-issue .issue-view>.issue-container .issue-header {
+	background: none;
+}
+

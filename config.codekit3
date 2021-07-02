@@ -9,6 +9,196 @@
 	],
 "creatorBuild": "32186",
 "files": {
+	"/chrome-ext/_locales/en/messages.json": {
+		"ft": 524288,
+		"oA": 1,
+		"oAP": "/chrome-ext/_locales/en/messages-min.json",
+		"oF": 0,
+		"oO": 0,
+		"oS": 1
+		},
+	"/chrome-ext/css/bootstrap.min.css": {
+		"aP": 1,
+		"bl": 0,
+		"ft": 16,
+		"ma": 0,
+		"oA": 0,
+		"oAP": "/chrome-ext/css/bootstrap.min-min.css",
+		"oF": 0,
+		"oS": 3
+		},
+	"/chrome-ext/css/options.css": {
+		"aP": 1,
+		"bl": 0,
+		"ft": 16,
+		"ma": 0,
+		"oA": 0,
+		"oAP": "/chrome-ext/css/options-min.css",
+		"oF": 0,
+		"oS": 3
+		},
+	"/chrome-ext/css/popup.css": {
+		"aP": 1,
+		"bl": 0,
+		"ft": 16,
+		"ma": 0,
+		"oA": 0,
+		"oAP": "/chrome-ext/css/popup-min.css",
+		"oF": 0,
+		"oS": 3
+		},
+	"/chrome-ext/css/style.css": {
+		"aP": 1,
+		"bl": 0,
+		"ft": 16,
+		"ma": 0,
+		"oA": 0,
+		"oAP": "/chrome-ext/css/style-min.css",
+		"oF": 0,
+		"oS": 3
+		},
+	"/chrome-ext/images/img128.png": {
+		"ft": 32768,
+		"iS": 6719,
+		"oA": 0,
+		"oAP": "/chrome-ext/images/img128.png",
+		"oF": 0,
+		"oIPL": 0,
+		"opt": 0,
+		"oT": 1,
+		"q": 100
+		},
+	"/chrome-ext/images/img16.png": {
+		"ft": 32768,
+		"iS": 1127,
+		"oA": 0,
+		"oAP": "/chrome-ext/images/img16.png",
+		"oF": 0,
+		"oIPL": 1,
+		"opt": 1,
+		"oT": 1,
+		"q": 100
+		},
+	"/chrome-ext/images/img32.png": {
+		"ft": 32768,
+		"iS": 1309,
+		"oA": 0,
+		"oAP": "/chrome-ext/images/img32.png",
+		"oF": 0,
+		"oIPL": 1,
+		"opt": 1,
+		"oT": 1,
+		"q": 100
+		},
+	"/chrome-ext/images/img48.png": {
+		"ft": 32768,
+		"iS": 1499,
+		"oA": 0,
+		"oAP": "/chrome-ext/images/img48.png",
+		"oF": 0,
+		"oIPL": 1,
+		"opt": 1,
+		"oT": 1,
+		"q": 100
+		},
+	"/chrome-ext/images/nssc-logo.png": {
+		"ft": 32768,
+		"iS": 24060,
+		"oA": 0,
+		"oAP": "/chrome-ext/images/nssc-logo.png",
+		"oF": 0,
+		"oIPL": 0,
+		"opt": 0,
+		"oT": 1,
+		"q": 100
+		},
+	"/chrome-ext/images/throbber_13.gif": {
+		"ft": 4194304,
+		"iS": 89658,
+		"oA": 0,
+		"oAP": "/chrome-ext/images/throbber_13.gif",
+		"oF": 0,
+		"opt": 0
+		},
+	"/chrome-ext/js/background.js": {
+		"bF": 0,
+		"ft": 64,
+		"ma": 0,
+		"mi": 1,
+		"oA": 0,
+		"oAP": "/chrome-ext/js/min/background-min.js",
+		"oF": 0,
+		"sC": 1,
+		"tS": 0
+		},
+	"/chrome-ext/js/jquery.min.js": {
+		"bF": 0,
+		"ft": 64,
+		"ma": 0,
+		"mi": 1,
+		"oA": 0,
+		"oAP": "/chrome-ext/js/min/jquery.min-min.js",
+		"oF": 0,
+		"sC": 1,
+		"tS": 0
+		},
+	"/chrome-ext/js/master.js": {
+		"bF": 0,
+		"ft": 64,
+		"ma": 0,
+		"mi": 1,
+		"oA": 0,
+		"oAP": "/chrome-ext/js/min/master-min.js",
+		"oF": 0,
+		"sC": 1,
+		"tS": 0
+		},
+	"/chrome-ext/js/options.js": {
+		"bF": 0,
+		"ft": 64,
+		"ma": 0,
+		"mi": 1,
+		"oA": 0,
+		"oAP": "/chrome-ext/js/min/options-min.js",
+		"oF": 0,
+		"sC": 1,
+		"tS": 0
+		},
+	"/chrome-ext/js/popup.js": {
+		"bF": 0,
+		"ft": 64,
+		"ma": 0,
+		"mi": 1,
+		"oA": 0,
+		"oAP": "/chrome-ext/js/min/popup-min.js",
+		"oF": 0,
+		"sC": 1,
+		"tS": 0
+		},
+	"/chrome-ext/manifest.json": {
+		"ft": 524288,
+		"oA": 1,
+		"oAP": "/chrome-ext/manifest-min.json",
+		"oF": 0,
+		"oO": 0,
+		"oS": 1
+		},
+	"/chrome-ext/options.html": {
+		"cB": 0,
+		"ft": 8192,
+		"hM": 0,
+		"oA": 2,
+		"oAP": "/chrome-ext/options.html",
+		"oF": 0
+		},
+	"/chrome-ext/popup.html": {
+		"cB": 0,
+		"ft": 8192,
+		"hM": 0,
+		"oA": 2,
+		"oAP": "/chrome-ext/popup.html",
+		"oF": 0
+		},
 	"/images/body-bg.png": {
 		"ft": 32768,
 		"iS": 2401,
@@ -93,17 +283,6 @@
 		"oA": 0,
 		"oAP": "/index.html",
 		"oF": 0
-		},
-	"/javascripts/main.js": {
-		"bF": 0,
-		"ft": 64,
-		"ma": 0,
-		"mi": 1,
-		"oA": 0,
-		"oAP": "/javascripts/min/main-min.js",
-		"oF": 0,
-		"sC": 1,
-		"tS": 0
 		},
 	"/README.md": {
 		"cB": 0,

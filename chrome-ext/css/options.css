@@ -1,0 +1,109 @@
+#typedtext {
+	height: 70px;
+	line-height: 1.5em;
+}
+
+
+.container {
+  /* This will make it stack on top of the :before */
+  position: relative;
+  padding-bottom: 100px;
+  padding-top: 40px;
+}
+
+#footer {
+	margin: 100px 0 0;
+	padding: 10px 0 60px;
+	background: #efefef;
+}
+
+#footer-navigation {
+	list-style-type: none;
+	margin: 20px 0;
+	padding: 0;
+	text-align: center;
+}
+
+#footer-navigation li {
+	padding: 0;
+	margin: 0 20px;
+	display: inline-block;
+}
+
+#footer-navigation li a {
+	color: #666;
+}
+
+#footer-navigation li a:hover {
+	color: #999;
+}
+
+#alert {
+	position: fixed;
+	top: 10px;
+	right: 10px;
+	z-index: 99999;
+}
+
+#save, #save2 {
+	float: right;
+	z-index: 2;
+	position: relative;
+	margin-bottom: 10px;
+}
+
+
+/* Style the buttons that are used to open and close the accordion panel */
+.accordion {
+  background-color: #eee;
+  color: #444;
+  cursor: pointer;
+  padding: 18px;
+  width: 100%;
+  text-align: left;
+  border: none;
+  outline: none;
+  transition: 0.4s;
+  font-size: 17px;
+  clear: both;
+  font-weight: bold;
+}
+
+/* Add a background color to the button if it is clicked on (add the .active class with JS), and when you move the mouse over it (hover) */
+.active, .accordion:hover {
+  background-color: #ccc;
+}
+
+/* Style the accordion panel. Note: hidden by default */
+.accordion-group {
+  padding: 0 18px;
+  background-color: white;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.2s ease-out;
+}
+
+.accordion:after {
+  content: '\02795'; /* Unicode character for "plus" sign (+) */
+  font-size: 13px;
+  color: #777;
+  float: right;
+  margin-left: 5px;
+}
+
+.active:after {
+  content: "\2796"; /* Unicode character for "minus" sign (-) */
+}
+
+
+#options-header {
+	padding: 50px;
+	background-color: #efefef;
+}
+
+#headerlogo {
+	float: left;
+	width: 150px;
+	height: auto;
+	margin-right: 50px;
+}
