@@ -8,12 +8,13 @@
 // jshint strict: false 
 // jshint undef: false 
 // jshint expr: true 
+// jshint esnext: true
 
 // Enables action popup
 chrome.runtime.sendMessage({"message": "activate_icon"});
 
 function fetchResource(input, func, args) {
-    if (typeof (args) == "undefined") {
+    if (typeof (args) === "undefined") {
         args = null;
     }
     var init = { method: 'GET',
@@ -33,3 +34,5 @@ function fetchResource(input, func, args) {
     });
   });
 }
+
+console.log("HELLO FUCKING WORLD");

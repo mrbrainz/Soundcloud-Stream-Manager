@@ -1,50 +1,27 @@
 {
     "manifest_version": 2,
-    "name": "Agile Magic for Chrome",
-    "version": "1.0.0",
+    "name": "Soundcloud Stream Manager",
+    "version": "0.1",
     "default_locale": "en",
-    "description": "Brings issue templates, sprint board styling enhancements, and ways to easily view all your retro actions. By Greg Morris ツ",
+    "description": "Soundcloud Stream Management by Mr Brainz",
 
     "permissions": [
-        "https://tools.publicis.sapient.com/*",
-        "https://tools.publicis.sapient.com/confluence/*",
-        "https://slack.com/api/*",
-        "storage"
+        "https://soundcloud.com/*",
+        "storage",
+        "activeTab", 
+        "tabs",
+        "management", 
+        "webNavigation"
     ],
 
     "content_scripts": [
         { 
           "run_at" :"document_end",
-    		  "matches": ["https://tools.publicis.sapient.com/jira/*"],
+    		  "matches": ["https://soundcloud.com/stream"],
     		  "js": [
-      			"js/jquery.min.js",
-      			"js/jiratemplates.js",
             "js/master.js"
     		  ],
     		  "css":["css/style.css"] 
-        },
-        { 
-          "run_at" :"document_end",
-          "matches": ["https://tools.publicis.sapient.com/jira/secure/Dashboard.jspa?selectPageId=*"],
-          "js": [
-            "js/dashboard.js",
-            "js/actions.js",
-            "js/widgets.js"            
-          ]
-        },
-        { 
-          "run_at" :"document_end",
-          "matches": ["https://tools.publicis.sapient.com/jira/secure/RapidBoard.jspa?*"],
-          "js": [
-            "js/sprintboard.js"
-          ]
-        },
-        { 
-          "run_at" :"document_end",
-          "matches": ["https://tools.publicis.sapient.com/confluence/*"],
-          "js": [
-            "js/master.js"
-          ]
         }
     ],
     "background": {
@@ -52,7 +29,7 @@
         "persistent": false
       },
     "page_action": {        
-    	"default_title": "Agile Magic",
+    	"default_title": "Soundcloud Stream Manager",
       "default_popup": "popup.html",        
     	"default_icon": {            
     		"16": "images/img16.png",            
@@ -68,11 +45,8 @@
      	   "128": "images/img128.png"
      },
    "web_accessible_resources": [
-	    "templatedata.json",
-        "actions.html",
         "css/*",
-        "images/*",
-        "templates/*"
+        "images/*"
 	],
    "options_page": "options.html"
   }

@@ -1,11 +1,15 @@
 // jshint strict: false 
 // jshint undef: false 
 // jshint expr: true 
+// jshint latedef: false
 
 
 chrome.runtime.onInstalled.addListener(function() {    // add an action here
     
 });
+
+
+// Async fetch the Chrome Plugin way
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   switch(request.type)  {
@@ -35,41 +39,11 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
       }, function(error) {
         sendResponse([null, error]);
       });
-    return true;
-    
-    case "gettemplates":
-        chrome.runtime.getPackageDirectoryEntry(function(directoryEntry) {
-            directoryEntry.getDirectory('templates', {}, function(subDirectoryEntry) {
-                var directoryReader = subDirectoryEntry.createReader();
-                // List of DirectoryEntry and/or FileEntry objects.
-                
-                var filenames = [];
-                (function readNext() {
-                    directoryReader.readEntries(function(entries) {
-                        if (entries.length) {
-                            for (var i = 0; i < entries.length; ++i) {
-                                filenames.push(entries[i].name);
-                            }
-                            readNext();
-                        } else {
-                            // No more entries, so all files in the directory are known.
-                            // Do something, e.g. print all file names:
-                           //console.log(filenames);
-                           sendResponse(filenames);
-
-                        }
-                    });
-                return true;
-                })();
-            return true;
-            });
         return true;
-        });
     
-
+    }
+    
     return true;
-}
-return true;
 });
 
 
@@ -88,14 +62,16 @@ chrome.tabs.onUpdated.addListener(function(id, info, tab){
 });
 
 chrome.tabs.onActivated.addListener(function(id, info, tab){
-    chrome.tabs.query({ currentWindow: true, active: true },
-        function (tabArray) {
-            if(tabArray[0]){
-                showPageAction(tabArray[0]);
-            }
-        });
+    setTimeout(function() {
+        chrome.tabs.query({ currentWindow: true, active: true },
+            function (tabArray) {
+                if(tabArray[0]){
+                    showPageAction(tabArray[0]);
+                }
+            });
+    },100);
 });
 
 function showPageAction(tab){
-    chrome.pageAction.show(tab.id)
+    chrome.pageAction.show(tab.id);
 }
