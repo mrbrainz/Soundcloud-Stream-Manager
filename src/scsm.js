@@ -54,10 +54,10 @@ function copyNowPlayingToClipboard() {
 
 function searchOnDeezer() {
     var nowPlayingEl = document.getElementsByClassName("playbackSoundBadge__titleContextContainer")[0];
-    var nowPlayingArtist = nowPlayingEl.getElementsByClassName("playbackSoundBadge__lightLink")[0].innerText;
+    // var nowPlayingArtist = nowPlayingEl.getElementsByClassName("playbackSoundBadge__lightLink")[0].innerText;
     var nowPlayingTitle = nowPlayingEl.getElementsByTagName("span")[1].innerText;
-    var deezNuts = nowPlayingArtist + " " + nowPlayingTitle;
-        deezNuts = encodeURI(deezNuts.replace(/[^a-zA-Z ]/g, ""));
+    var deezNuts = nowPlayingTitle;
+        deezNuts = encodeURI(deezNuts.replace(/[^a-zA-Z0-9 ]/g, " ").trim().replace(/\s{2,}/g, ' '));
     var deezerURL = "https://www.deezer.com/search/" + deezNuts;
 
     window.open(deezerURL, "deeznuts");
