@@ -467,7 +467,7 @@ function fixMurk() {
 }
 
 function startmurk() {
-    if ((window.location.href === 'https://soundcloud.com/stream') || (window.location.href === 'https://soundcloud.com/stream/') || window.location.href.includes("sclayouttest.html") ) {
+    if ((window.location.href === 'https://soundcloud.com/feed') || (window.location.href === 'https://soundcloud.com/feed/') || window.location.href.includes("sclayouttest.html") ) {
          jQuery(document).ready(function() {
 
             if (!jQuery('#murkconsole').length) {
