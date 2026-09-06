@@ -25,6 +25,13 @@
   // In-memory, chrome.storage.local-backed. permalinkPath -> {data, fetchedAt}.
   let cache = {};
   let idIndex = {}; // trackId -> permalinkPath, so getTrackById can hit the same cache entry a resolve() call already populated
+  // trackId -> playlist descriptors, for a track the playlist-membership
+  // feature has crawled but that has no permalink-keyed cache entry yet
+  // (SoundCloud's playlists endpoint returns a bare stub - id/kind only -
+  // for any track it's already sent the caller once this session; see
+  // references/soundcloud-playlist-membership.user.js). Merged into the
+  // real cache entry the moment one exists (storeTrack below).
+  let pendingPlaylistsByTrackId = {};
   let loadPromise = null;
 
   function permalinkPath(url) {
@@ -43,6 +50,7 @@
         if (stored) {
           cache = stored.cache || {};
           idIndex = stored.idIndex || {};
+          pendingPlaylistsByTrackId = stored.pendingPlaylists || {};
         }
         resolve();
       });
@@ -54,7 +62,7 @@
   function saveSoon() {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
-      chrome.storage.local.set({ [CACHE_KEY]: { cache, idIndex } });
+      chrome.storage.local.set({ [CACHE_KEY]: { cache, idIndex, pendingPlaylists: pendingPlaylistsByTrackId } });
     }, 300);
   }
 
@@ -66,10 +74,10 @@
   }
 
   // Normalizes a raw /resolve or /tracks API record into the shape every
-  // feature reads, and stores it. `playlists` starts empty here - the
-  // playlist-membership feature (separate board card) owns populating it,
-  // this module just reserves the slot so that feature doesn't need its
-  // own parallel per-track cache.
+  // feature reads, and stores it. `playlists` is populated from whatever
+  // the playlist-membership feature has already recorded for this track -
+  // either a prior cache entry, or a pending-by-id entry if this is the
+  // first time this track has ever gotten a permalink-keyed cache entry.
   function storeTrack(track) {
     if (!track || typeof track.id !== 'number') return null;
     const path = track.permalink_url ? permalinkPath(track.permalink_url) : idIndex[track.id] || null;
@@ -82,14 +90,33 @@
       duration: typeof track.duration === 'number' ? track.duration : null,
       downloadable: !!track.downloadable,
       downloadUrl: track.download_url || null,
-      playlists: (cache[path] && cache[path].data.playlists) || [],
+      playlists: (cache[path] && cache[path].data.playlists) || pendingPlaylistsByTrackId[track.id] || [],
     };
     if (path) {
       cache[path] = { data, fetchedAt: Date.now() };
       idIndex[track.id] = path;
+      if (pendingPlaylistsByTrackId[track.id]) {
+        delete pendingPlaylistsByTrackId[track.id];
+      }
       saveSoon();
     }
     return data;
+  }
+
+  // Playlist-membership write path: sets which playlists (an array of
+  // {id, title}) a track id belongs to. Writes straight into the
+  // permalink-keyed cache entry if one already exists; otherwise holds it
+  // in pendingPlaylistsByTrackId until a resolve/getTrackById call for
+  // that track creates one (storeTrack above merges it in at that point).
+  async function setPlaylistsForTrackId(trackId, playlists) {
+    await load();
+    const path = idIndex[trackId];
+    if (path && cache[path]) {
+      cache[path].data.playlists = playlists;
+    } else {
+      pendingPlaylistsByTrackId[trackId] = playlists;
+    }
+    saveSoon();
   }
 
   // ---- concurrency-limited queue ----
@@ -178,6 +205,7 @@
     resolveByPermalinkPath,
     getTrackById,
     getCachedByPermalinkPath,
+    setPlaylistsForTrackId,
     permalinkPath,
   };
 })();
