@@ -54,6 +54,16 @@
     return results;
   }
 
+  // The row-level container a track anchor sits in - what a feature
+  // actually wants to badge/minimize/attach to, not the anchor itself.
+  // Falls back to the anchor's parent (or the anchor itself) on a page
+  // shape that doesn't use the feed/library/search <li> wrapper, so
+  // callers never have to null-check this.
+  function findRowForAnchor(anchor) {
+    if (!anchor) return null;
+    return anchor.closest('li.soundList__item') || anchor.parentElement || anchor;
+  }
+
   // ---- shared scan/annotate loop ----
   // Callbacks receive the raw list of "dirty" nodes to look inside (not
   // pre-filtered to anchors) - anchor-based features call findTrackAnchors
@@ -133,6 +143,7 @@
     permalinkPathFromHref,
     standalonePermalinkPath,
     findTrackAnchors,
+    findRowForAnchor,
     onScan,
     rescan,
   };

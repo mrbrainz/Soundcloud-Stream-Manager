@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SCSM mock fixture — hide-old-tracks feature self-check</title>
+    <style>
+      body { font-family: sans-serif; max-width: 640px; margin: 24px auto; }
+      .fixture-note { color: #888; font-size: 12px; }
+      #results { font-family: monospace; white-space: pre-wrap; }
+      .pass { color: #1a7f37; }
+      .fail { color: #cf222e; }
+      li.soundList__item { border: 1px solid #ddd; padding: 8px; margin-bottom: 6px; }
+    </style>
+  </head>
+  <body>
+    <p class="fixture-note">
+      Exercises "hide tracks older than X days" end-to-end: toggling
+      <code>hideOldTracks</code>/<code>hideOldTracksDays</code> via
+      <code>lib/settings.js</code> and confirming
+      <code>content/features/hideOldTracks.js</code> minimizes (and
+      restores) the right rows, uniformly across reposts AND original
+      uploads. See <a href="../README.md">test/README.md</a>.
+    </p>
+    <div id="results">running…</div>
+
+    <ul>
+      <li class="soundList__item" id="row-old-repost">
+        <a class="soundTitle__title" href="/testartist/old-repost-track">Old Repost Track</a>
+      </li>
+      <li class="soundList__item" id="row-recent-repost">
+        <a class="soundTitle__title" href="/testartist/recent-repost-track">Recent Repost Track</a>
+      </li>
+      <li class="soundList__item" id="row-old-original">
+        <a class="soundTitle__title" href="/testartist/in-playlist-track">In Playlist Track</a>
+      </li>
+    </ul>
+
+    <script src="/test/mocks/chrome-mock.js"></script>
+    <script src="/test/mocks/data.js"></script>
+    <script src="/test/mocks/sc-api-mock.js"></script>
+    <script src="/lib/settings.js"></script>
+    <script src="/lib/auth.js"></script>
+    <script src="/lib/api.js"></script>
+    <script src="/lib/dom.js"></script>
+    <script src="/lib/rowState.js"></script>
+    <script src="/content/features/hideOldTracks.js"></script>
+    <script>
+      (async function () {
+        const out = document.getElementById('results');
+        const lines = [];
+        let failures = 0;
+
+        function check(label, actual, expected) {
+          const ok = JSON.stringify(actual) === JSON.stringify(expected);
+          if (!ok) failures++;
+          lines.push(
+            `${ok ? 'PASS' : 'FAIL'} ${label}` +
+              (ok ? '' : ` — expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`)
+          );
+        }
+        function wait(ms) {
+          return new Promise((resolve) => setTimeout(resolve, ms));
+        }
+        function minimized(id) {
+          return window.SCSMRowState.isMinimized(document.getElementById(id));
+        }
+
+        await wait(30);
+        check('nothing minimized before the feature is enabled', minimized('row-old-repost'), false);
+
+        // Default threshold is 30 days. old-repost-track (~3.6 years) and
+        // in-playlist-track (40 days) both exceed it; recent-repost-track
+        // (2 days) doesn't.
+        await window.SCSMSettings.set({ hideOldTracks: true });
+        await wait(100);
+
+        check('an old repost is minimized', minimized('row-old-repost'), true);
+        check('an old ORIGINAL upload is minimized too (age applies uniformly, not just to reposts)', minimized('row-old-original'), true);
+        check('a recent repost is left alone', minimized('row-recent-repost'), false);
+        check(
+          'the minimized row shows the track title as its label',
+          document.getElementById('row-old-repost').querySelector('.scsm-row-summary-text').textContent,
+          'Old Repost Track'
+        );
+
+        // ---- raising the threshold above in-playlist-track's 40-day age restores it ----
+        await window.SCSMSettings.set({ hideOldTracksDays: 60 });
+        await wait(100);
+        check('raising the threshold above a row\'s age restores it', minimized('row-old-original'), false);
+        check('a still-older row stays minimized after raising the threshold', minimized('row-old-repost'), true);
+
+        // ---- lowering the threshold re-hides it ----
+        await window.SCSMSettings.set({ hideOldTracksDays: 30 });
+        await wait(100);
+        check('lowering the threshold back re-minimizes the row', minimized('row-old-original'), true);
+
+        // ---- the "show" link restores a row even while the feature stays on ----
+        document.getElementById('row-old-repost').querySelector('.scsm-row-show-link').click();
+        check('clicking "show" restores the row', minimized('row-old-repost'), false);
+
+        // ---- toggling the feature off restores everything it minimized ----
+        await window.SCSMSettings.set({ hideOldTracks: false });
+        await wait(30);
+        check('toggling off restores the still-minimized row', minimized('row-old-original'), false);
+
+        out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
+        out.className = failures === 0 ? 'pass' : 'fail';
+        console.log('[SCSM selfcheck]', failures === 0 ? 'ALL PASSED' : failures + ' FAILED', lines);
+      })();
+    </script>
+  </body>
+</html>

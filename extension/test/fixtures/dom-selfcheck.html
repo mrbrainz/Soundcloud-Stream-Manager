@@ -65,6 +65,12 @@
           ['/testartist/old-repost-track', '/testartist/recent-repost-track', '/testartist/long-mix']
         );
 
+        check(
+          'findRowForAnchor walks up to the containing li.soundList__item',
+          window.SCSMDom.findRowForAnchor(anchors[0]) === anchors[0].closest('li.soundList__item'),
+          true
+        );
+
         // ---- shared scan loop: initial deferred full scan ----
         const initialScans = [];
         window.SCSMDom.onScan((dirtyNodes) => initialScans.push(dirtyNodes));
