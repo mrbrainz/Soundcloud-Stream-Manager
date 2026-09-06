@@ -30,6 +30,9 @@
       <li class="soundList__item" id="row-old-original">
         <a class="soundTitle__title" href="/testartist/in-playlist-track">In Playlist Track</a>
       </li>
+      <li class="soundList__item" id="row-label-track">
+        <a class="soundTitle__title" href="/nawtyrecords/label-track">Neumonic - Massive</a>
+      </li>
     </ul>
 
     <script src="/test/mocks/chrome-mock.js"></script>
@@ -85,6 +88,16 @@
           'www.beatport.com',
           'open.spotify.com',
         ]);
+
+        // ---- dedupe: a title that already contains the artist name shouldn't repeat it ----
+        // label-track (mocks/data.js): title "Neumonic - Massive", artist
+        // "Neumonic" (via publisher_metadata) - real case from #36/#37.
+        const labelDeezerLink = document.querySelector('#row-label-track .scsm-search-link-deezer');
+        check(
+          'the query does not duplicate an artist name already in the title',
+          decodeURIComponent(new URL(labelDeezerLink.href).pathname.split('/search/')[1]),
+          'Neumonic Massive'
+        );
 
         // ---- idempotency: rescanning doesn't duplicate links ----
         window.SCSMDom.rescan();
