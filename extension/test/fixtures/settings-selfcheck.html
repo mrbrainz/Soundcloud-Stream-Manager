@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SCSM mock fixture — lib/settings.js self-check</title>
+    <style>
+      body { font-family: sans-serif; max-width: 640px; margin: 24px auto; }
+      .fixture-note { color: #888; font-size: 12px; }
+      #results { font-family: monospace; white-space: pre-wrap; }
+      .pass { color: #1a7f37; }
+      .fail { color: #cf222e; }
+    </style>
+  </head>
+  <body>
+    <p class="fixture-note">
+      Exercises <code>lib/settings.js</code>: defaults, merge-on-set, and the
+      live-apply <code>onChange</code> subscription (using
+      <code>mocks/chrome-mock.js</code>'s in-memory
+      <code>chrome.storage.local</code>/<code>onChanged</code> shim). See
+      <a href="../README.md">test/README.md</a>.
+    </p>
+    <div id="results">running…</div>
+
+    <script src="/test/mocks/chrome-mock.js"></script>
+    <script src="/lib/settings.js"></script>
+    <script>
+      (async function () {
+        const out = document.getElementById('results');
+        const lines = [];
+        let failures = 0;
+
+        function check(label, actual, expected) {
+          const ok = JSON.stringify(actual) === JSON.stringify(expected);
+          if (!ok) failures++;
+          lines.push(
+            `${ok ? 'PASS' : 'FAIL'} ${label}` +
+              (ok ? '' : ` — expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`)
+          );
+        }
+
+        // ---- defaults ----
+        const initial = await window.SCSMSettings.get();
+        check('get() returns defaults when nothing is stored', initial, window.SCSMSettings.DEFAULTS);
+        check('defaults: everything off', initial.showRepostAge, false);
+        check('defaults: hideOldTracksDays is 30', initial.hideOldTracksDays, 30);
+        check('defaults: hideLongTracksMinutes is 25', initial.hideLongTracksMinutes, 25);
+
+        // ---- onChange fires (including for the tab that made the change) ----
+        const changes = [];
+        window.SCSMSettings.onChange((settings) => changes.push(settings));
+
+        // ---- set() merges rather than replaces ----
+        await window.SCSMSettings.set({ showRepostAge: true });
+        const afterFirstSet = await window.SCSMSettings.get();
+        check('set() applies the changed field', afterFirstSet.showRepostAge, true);
+        check('set() leaves other fields at their defaults', afterFirstSet.hideOldTracksDays, 30);
+
+        await window.SCSMSettings.set({ hideOldTracksDays: 10 });
+        const afterSecondSet = await window.SCSMSettings.get();
+        check('a second set() merges onto the first, not replaces it', afterSecondSet.showRepostAge, true);
+        check('a second set() applies its own field', afterSecondSet.hideOldTracksDays, 10);
+
+        await new Promise((resolve) => setTimeout(resolve, 20)); // let onChanged listeners run
+        check('onChange fired once per set() call', changes.length, 2);
+        check('onChange delivered the fully-merged settings, not just the diff', changes[1].showRepostAge, true);
+
+        out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
+        out.className = failures === 0 ? 'pass' : 'fail';
+        console.log('[SCSM selfcheck]', failures === 0 ? 'ALL PASSED' : failures + ' FAILED', lines);
+      })();
+    </script>
+  </body>
+</html>

@@ -62,6 +62,10 @@ over `http://`.)
   scenario in `mocks/data.js` (correctness, not just reachability — compare
   `mocks/sc-api-mock.js`'s own self-test, which only checks the mocked
   endpoints themselves respond).
+- **`fixtures/settings-selfcheck.html`** — not a page-shape fixture;
+  asserts `lib/settings.js`'s defaults, that `set()` merges rather than
+  replaces, and that `onChange` fires with the fully-merged settings object
+  for every `set()` call.
 - **`fixtures/dom-selfcheck.html`** — not a page-shape fixture; asserts
   `lib/dom.js`'s row matching (`findTrackAnchors`, `permalinkPathFromHref`)
   and its shared scan loop (`onScan`, `rescan`), including that a
