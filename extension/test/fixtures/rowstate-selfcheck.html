@@ -67,16 +67,32 @@
         check('minimizing again does not add a second summary', row.querySelectorAll(':scope > .scsm-row-summary').length, 1);
         check('minimizing again updates the label', row.querySelector('.scsm-row-summary-text').textContent, 'Old Repost Track — 2y1mo old');
 
-        // ---- clicking "show" restores the row ----
+        // ---- clicking "show" restores the row AND marks it dismissed ----
+        // (the dismissal is what stops a feature from immediately
+        // re-minimizing it on the rescan restore() itself triggers - see
+        // the "hidden track's show link doesn't restore the row" bug)
         row.querySelector('.scsm-row-show-link').click();
         check('isMinimized() is false after clicking show', window.SCSMRowState.isMinimized(row), false);
         check('the summary is removed after restoring', !!row.querySelector(':scope > .scsm-row-summary'), false);
         check('the original anchor is back after restoring', !!row.querySelector(':scope > a.soundTitle__title'), true);
         check('restoring puts back exactly the original children', row.children.length, originalChildCount);
+        check('clicking show marks the row dismissed for its reason', window.SCSMRowState.isDismissed(row, 'old'), true);
+        check('isDismissed() is false for a different reason', window.SCSMRowState.isDismissed(row, 'long'), false);
+
+        window.SCSMRowState.clearDismissed(row);
+        check('clearDismissed() removes the dismissal', window.SCSMRowState.isDismissed(row, 'old'), false);
 
         // ---- restoring an already-restored row is a no-op ----
         window.SCSMRowState.restore(row);
         check('restoring an already-restored row does not throw or change child count', row.children.length, originalChildCount);
+
+        // ---- a PROGRAMMATIC restore (not via the show link) does NOT dismiss ----
+        // a feature calling restore() itself (e.g. a threshold change the
+        // row no longer matches) isn't a user override, so it shouldn't
+        // block that same feature from re-minimizing the row later.
+        window.SCSMRowState.minimize(row, 'Old Repost Track re-minimized', { reason: 'old' });
+        window.SCSMRowState.restore(row);
+        check('a direct restore() call does not mark the row dismissed', window.SCSMRowState.isDismissed(row, 'old'), false);
 
         out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
         out.className = failures === 0 ? 'pass' : 'fail';

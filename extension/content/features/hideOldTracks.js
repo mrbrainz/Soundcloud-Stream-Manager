@@ -34,6 +34,11 @@
 
     const ageDays = (Date.now() - new Date(track.createdAt).getTime()) / (1000 * 60 * 60 * 24);
     if (ageDays > thresholdDays) {
+      // The user explicitly clicked "show" to override this - don't
+      // immediately re-minimize it on the rescan that click itself
+      // triggers (see the "hidden track's show link doesn't restore the
+      // row" bug). Stays dismissed until the feature is toggled off/on.
+      if (window.SCSMRowState.isDismissed(row, REASON)) return;
       window.SCSMRowState.minimize(row, labelFor(track, anchor), { reason: REASON });
     } else if (window.SCSMRowState.isMinimized(row) && row.dataset.scsmMinimizeReason === REASON) {
       // The threshold was raised since this row was last evaluated (e.g.
@@ -52,6 +57,9 @@
 
   function restoreOwnRows() {
     document.querySelectorAll(`[data-scsm-minimize-reason="${REASON}"]`).forEach((row) => window.SCSMRowState.restore(row));
+    // A full off/on cycle is a clean slate - a row the user dismissed
+    // under the old session shouldn't stay permanently immune.
+    document.querySelectorAll(`[data-scsm-dismissed-reason="${REASON}"]`).forEach((row) => window.SCSMRowState.clearDismissed(row));
   }
 
   function applySetting(settings) {

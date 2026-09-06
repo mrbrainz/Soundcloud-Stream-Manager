@@ -96,13 +96,32 @@
         check('lowering the threshold back re-minimizes the row', minimized('row-old-original'), true);
 
         // ---- the "show" link restores a row even while the feature stays on ----
+        // Critically: it must STAY shown, not get immediately re-minimized
+        // by the rescan restore() itself triggers (the actual live bug -
+        // the row is still just as old, so without the dismissal tracking
+        // in lib/rowState.js, evaluate() would re-hide it right back). The
+        // wait here is deliberate: the original version of this test
+        // checked synchronously right after the click, before the async
+        // re-evaluation had a chance to run, which is exactly why it
+        // didn't catch this.
         document.getElementById('row-old-repost').querySelector('.scsm-row-show-link').click();
-        check('clicking "show" restores the row', minimized('row-old-repost'), false);
+        await wait(150);
+        check('clicking "show" restores the row and it STAYS shown', minimized('row-old-repost'), false);
+
+        // ---- rescanning again (e.g. new feed items loading) still respects the dismissal ----
+        window.SCSMDom.rescan();
+        await wait(100);
+        check('a later, unrelated rescan does not re-hide a dismissed row', minimized('row-old-repost'), false);
 
         // ---- toggling the feature off restores everything it minimized ----
         await window.SCSMSettings.set({ hideOldTracks: false });
         await wait(30);
         check('toggling off restores the still-minimized row', minimized('row-old-original'), false);
+
+        // ---- toggling back on re-hides the PREVIOUSLY-DISMISSED row too (clean slate) ----
+        await window.SCSMSettings.set({ hideOldTracks: true });
+        await wait(100);
+        check('toggling off and back on re-minimizes a previously-dismissed row', minimized('row-old-repost'), true);
 
         out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
         out.className = failures === 0 ? 'pass' : 'fail';
