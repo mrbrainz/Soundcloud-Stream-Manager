@@ -16,6 +16,7 @@ window.__SCSM_MOCK_DATA__ = {
       created_at: '2023-01-15T10:00:00Z',
       duration: 210000, // 3:30
       downloadable: false,
+      user: { username: 'Test Artist' },
     },
     // Recent repost — should NOT trip the age filter.
     '/testartist/recent-repost-track': {
@@ -26,6 +27,7 @@ window.__SCSM_MOCK_DATA__ = {
       created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
       duration: 195000, // 3:15
       downloadable: true,
+      user: { username: 'Test Artist' },
     },
     // Original upload, long mix — should trip "hide tracks longer than X
     // minutes" (default 25).
@@ -37,6 +39,7 @@ window.__SCSM_MOCK_DATA__ = {
       created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(), // 10 days ago
       duration: 32 * 60 * 1000, // 32 min
       downloadable: false,
+      user: { username: 'Mix Master' },
     },
     // Original upload, short + downloadable — happy path for the download
     // button and search-link features, should NOT trip either hide filter.
@@ -49,6 +52,7 @@ window.__SCSM_MOCK_DATA__ = {
       duration: 180000, // 3:00
       downloadable: true,
       download_url: 'https://api-v2.soundcloud.com/tracks/1004/download',
+      user: { username: "DJ O'Brien-Smith" },
     },
     // Already sits in "My Favourites" and "Techno 2026" per the playlists
     // mock below — happy path for "show playlist membership".
@@ -60,6 +64,7 @@ window.__SCSM_MOCK_DATA__ = {
       created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 40).toISOString(), // 40 days ago
       duration: 240000, // 4:00
       downloadable: false,
+      user: { username: 'Test Artist' },
     },
   },
 

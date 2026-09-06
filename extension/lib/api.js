@@ -76,6 +76,7 @@
     const data = {
       id: track.id,
       title: track.title || null,
+      artist: (track.user && track.user.username) || null,
       permalinkPath: path,
       createdAt: track.created_at || track.display_date || null,
       duration: typeof track.duration === 'number' ? track.duration : null,

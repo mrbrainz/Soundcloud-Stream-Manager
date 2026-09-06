@@ -56,6 +56,7 @@
         const dl = await window.SCSMApi.resolveByPermalinkPath('/testartist/short-downloadable-track');
         check('short-downloadable-track downloadable', dl && dl.downloadable, true);
         check('short-downloadable-track id', dl && dl.id, 1004);
+        check('artist comes from the track\'s user.username', dl && dl.artist, "DJ O'Brien-Smith");
 
         const missing = await window.SCSMApi.resolveByPermalinkPath('/testartist/does-not-exist');
         check('unresolvable permalink returns null', missing, null);
