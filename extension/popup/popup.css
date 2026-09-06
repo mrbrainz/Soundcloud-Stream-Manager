@@ -1,17 +1,35 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  width: 260px;
+  width: 300px;
   padding: 12px;
   margin: 0;
+  font-size: 13px;
 }
 
 h1 {
   font-size: 14px;
-  margin: 0 0 8px;
+  margin: 0 0 10px;
 }
 
-p {
-  font-size: 12px;
-  color: #666;
-  margin: 0;
+.feature {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.feature label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.threshold {
+  width: 48px;
+  margin: 0 4px;
+}
+
+.threshold:disabled {
+  opacity: 0.4;
 }

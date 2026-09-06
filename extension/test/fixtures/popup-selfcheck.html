@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SCSM mock fixture — popup UI self-check</title>
+    <link rel="stylesheet" href="/popup/popup.css" />
+    <style>
+      .fixture-note { color: #888; font-size: 12px; font-family: sans-serif; max-width: 640px; }
+      #results { font-family: monospace; white-space: pre-wrap; }
+      .pass { color: #1a7f37; }
+      .fail { color: #cf222e; }
+    </style>
+  </head>
+  <body>
+    <p class="fixture-note">
+      Reproduces <code>popup/popup.html</code>'s form markup (kept in sync
+      by hand — see <a href="../README.md">test/README.md</a>) and loads the
+      real, unmodified <code>popup/popup.js</code> against
+      <code>mocks/chrome-mock.js</code>'s in-memory
+      <code>chrome.storage.local</code>. Real popups can't be driven by this
+      session's browser tooling, so this is how popup.js gets verified.
+    </p>
+
+    <h1>Soundcloud Stream Manager</h1>
+
+    <div class="feature">
+      <label><input type="checkbox" id="showRepostAge"> Show repost age</label>
+    </div>
+
+    <div class="feature">
+      <label><input type="checkbox" id="showPlaylistMembership"> Show playlist membership</label>
+    </div>
+
+    <div class="feature">
+      <label><input type="checkbox" id="hideOldTracks"> Hide tracks older than</label>
+      <input type="number" id="hideOldTracksDays" class="threshold" min="1"> days
+    </div>
+
+    <div class="feature">
+      <label><input type="checkbox" id="hideLongTracks"> Hide tracks longer than</label>
+      <input type="number" id="hideLongTracksMinutes" class="threshold" min="1"> minutes
+    </div>
+
+    <div class="feature">
+      <label><input type="checkbox" id="showSearchLinks"> Show search links (Deezer, Apple Music, Beatport, Spotify)</label>
+    </div>
+
+    <div class="feature">
+      <label><input type="checkbox" id="showDownloadButton"> Show legacy download button</label>
+    </div>
+
+    <div id="results">running…</div>
+
+    <script src="/test/mocks/chrome-mock.js"></script>
+    <script src="/lib/settings.js"></script>
+    <script src="/popup/popup.js"></script>
+    <script>
+      (async function () {
+        const out = document.getElementById('results');
+        const lines = [];
+        let failures = 0;
+
+        function check(label, actual, expected) {
+          const ok = JSON.stringify(actual) === JSON.stringify(expected);
+          if (!ok) failures++;
+          lines.push(
+            `${ok ? 'PASS' : 'FAIL'} ${label}` +
+              (ok ? '' : ` — expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`)
+          );
+        }
+
+        function fire(el, type) {
+          el.dispatchEvent(new Event(type, { bubbles: true }));
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 20)); // let popup.js's async init() finish
+
+        // ---- initial render reflects defaults ----
+        check('showRepostAge starts unchecked (default off)', document.getElementById('showRepostAge').checked, false);
+        check('hideOldTracksDays starts at 30', document.getElementById('hideOldTracksDays').value, '30');
+        check('hideOldTracksDays starts disabled (hideOldTracks is off)', document.getElementById('hideOldTracksDays').disabled, true);
+
+        // ---- checking a toggle persists to settings ----
+        const repostAge = document.getElementById('showRepostAge');
+        repostAge.checked = true;
+        fire(repostAge, 'change');
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        const afterToggle = await window.SCSMSettings.get();
+        check('checking a toggle calls SCSMSettings.set()', afterToggle.showRepostAge, true);
+
+        // ---- checking hideOldTracks enables its threshold input ----
+        const hideOld = document.getElementById('hideOldTracks');
+        hideOld.checked = true;
+        fire(hideOld, 'change');
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        check('hideOldTracksDays becomes enabled once hideOldTracks is checked', document.getElementById('hideOldTracksDays').disabled, false);
+
+        // ---- editing a threshold persists the new value ----
+        const daysInput = document.getElementById('hideOldTracksDays');
+        daysInput.value = '10';
+        fire(daysInput, 'change');
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        const afterThreshold = await window.SCSMSettings.get();
+        check('editing the threshold persists the new value', afterThreshold.hideOldTracksDays, 10);
+        check('editing one threshold does not disturb the other setting', afterThreshold.showRepostAge, true);
+
+        // ---- external change (e.g. another popup instance) reflects back into the form ----
+        await window.SCSMSettings.set({ showPlaylistMembership: true });
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        check(
+          'a settings change from elsewhere is reflected back into the form (live-apply)',
+          document.getElementById('showPlaylistMembership').checked,
+          true
+        );
+
+        out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
+        out.className = failures === 0 ? 'pass' : 'fail';
+        console.log('[SCSM selfcheck]', failures === 0 ? 'ALL PASSED' : failures + ' FAILED', lines);
+      })();
+    </script>
+  </body>
+</html>

@@ -7,7 +7,34 @@
   </head>
   <body>
     <h1>Soundcloud Stream Manager</h1>
-    <p>Popup UI coming soon — see the "Popup UI shell" board card.</p>
+
+    <div class="feature">
+      <label><input type="checkbox" id="showRepostAge"> Show repost age</label>
+    </div>
+
+    <div class="feature">
+      <label><input type="checkbox" id="showPlaylistMembership"> Show playlist membership</label>
+    </div>
+
+    <div class="feature">
+      <label><input type="checkbox" id="hideOldTracks"> Hide tracks older than</label>
+      <input type="number" id="hideOldTracksDays" class="threshold" min="1"> days
+    </div>
+
+    <div class="feature">
+      <label><input type="checkbox" id="hideLongTracks"> Hide tracks longer than</label>
+      <input type="number" id="hideLongTracksMinutes" class="threshold" min="1"> minutes
+    </div>
+
+    <div class="feature">
+      <label><input type="checkbox" id="showSearchLinks"> Show search links (Deezer, Apple Music, Beatport, Spotify)</label>
+    </div>
+
+    <div class="feature">
+      <label><input type="checkbox" id="showDownloadButton"> Show legacy download button</label>
+    </div>
+
+    <script src="../lib/settings.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>
