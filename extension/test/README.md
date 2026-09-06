@@ -57,6 +57,11 @@ over `http://`.)
   [`references/soundcloud-repost-age.user.js`](../../references/soundcloud-repost-age.user.js)
   expects. Feed, library, and search all share this shape, so one fixture
   covers all three.
+- **`fixtures/api-selfcheck.html`** — not a page-shape fixture; asserts
+  `lib/auth.js` and `lib/api.js`'s actual return values against every
+  scenario in `mocks/data.js` (correctness, not just reachability — compare
+  `mocks/sc-api-mock.js`'s own self-test, which only checks the mocked
+  endpoints themselves respond).
 - **`fixtures/standalone-track.html`** — the standalone
   `soundcloud.com/artist/track` page shape: SoundCloud renders this inside a
   same-origin `webiIframe` with a plain `<h1>` and no

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SCSM mock fixture — lib/auth.js + lib/api.js self-check</title>
+    <style>
+      body { font-family: sans-serif; max-width: 640px; margin: 24px auto; }
+      .fixture-note { color: #888; font-size: 12px; }
+      #results { font-family: monospace; white-space: pre-wrap; }
+      .pass { color: #1a7f37; }
+      .fail { color: #cf222e; }
+    </style>
+  </head>
+  <body>
+    <p class="fixture-note">
+      Exercises <code>lib/auth.js</code> and <code>lib/api.js</code> directly
+      against every scenario in <code>mocks/data.js</code> and asserts the
+      results are correct (not just reachable — see
+      <code>mocks/sc-api-mock.js</code>'s own reachability self-test, which
+      this complements). See <a href="../README.md">test/README.md</a>.
+    </p>
+    <div id="results">running…</div>
+
+    <script src="/test/mocks/chrome-mock.js"></script>
+    <script src="/test/mocks/data.js"></script>
+    <script src="/test/mocks/sc-api-mock.js"></script>
+    <script src="/lib/settings.js"></script>
+    <script src="/lib/auth.js"></script>
+    <script src="/lib/api.js"></script>
+    <script>
+      (async function () {
+        const out = document.getElementById('results');
+        const lines = [];
+        let failures = 0;
+
+        function check(label, actual, expected) {
+          const ok = JSON.stringify(actual) === JSON.stringify(expected);
+          if (!ok) failures++;
+          lines.push(
+            `${ok ? 'PASS' : 'FAIL'} ${label}` +
+              (ok ? '' : ` — expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`)
+          );
+        }
+
+        // ---- auth.js ----
+        check('getClientId()', window.SCSMAuth.getClientId(), 'mock-client-id-123');
+        check('getMyUserId()', window.SCSMAuth.getMyUserId(), 999);
+        check('getOAuthToken()', window.SCSMAuth.getOAuthToken(), 'mock-oauth-token');
+        check('authHeaders()', window.SCSMAuth.authHeaders(), { Authorization: 'OAuth mock-oauth-token' });
+
+        // ---- api.js: resolveByPermalinkPath ----
+        const longMix = await window.SCSMApi.resolveByPermalinkPath('/testartist/long-mix');
+        check('long-mix duration', longMix && longMix.duration, 32 * 60 * 1000);
+        check('long-mix downloadable', longMix && longMix.downloadable, false);
+
+        const dl = await window.SCSMApi.resolveByPermalinkPath('/testartist/short-downloadable-track');
+        check('short-downloadable-track downloadable', dl && dl.downloadable, true);
+        check('short-downloadable-track id', dl && dl.id, 1004);
+
+        const missing = await window.SCSMApi.resolveByPermalinkPath('/testartist/does-not-exist');
+        check('unresolvable permalink returns null', missing, null);
+
+        // ---- api.js: getTrackById ----
+        const byId = await window.SCSMApi.getTrackById(1001);
+        check('getTrackById(1001) permalinkPath', byId && byId.permalinkPath, '/testartist/old-repost-track');
+
+        // ---- caching: resolving twice should hit the cache, not the network, the second time ----
+        let fetchCount = 0;
+        const realFetch = window.fetch;
+        window.fetch = function (...args) {
+          fetchCount++;
+          return realFetch.apply(this, args);
+        };
+        await window.SCSMApi.resolveByPermalinkPath('/testartist/in-playlist-track');
+        const before = fetchCount;
+        await window.SCSMApi.resolveByPermalinkPath('/testartist/in-playlist-track');
+        window.fetch = realFetch;
+        check('second resolve of the same permalink hits no network', fetchCount, before);
+
+        // ---- sync cache read ----
+        const cached = window.SCSMApi.getCachedByPermalinkPath('/testartist/in-playlist-track');
+        check('getCachedByPermalinkPath returns the cached record', cached && cached.id, 1005);
+
+        out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
+        out.className = failures === 0 ? 'pass' : 'fail';
+        console.log('[SCSM selfcheck]', failures === 0 ? 'ALL PASSED' : failures + ' FAILED', lines);
+      })();
+    </script>
+  </body>
+</html>
