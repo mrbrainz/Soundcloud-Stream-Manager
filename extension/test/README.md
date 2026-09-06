@@ -62,6 +62,14 @@ over `http://`.)
   scenario in `mocks/data.js` (correctness, not just reachability — compare
   `mocks/sc-api-mock.js`'s own self-test, which only checks the mocked
   endpoints themselves respond).
+- **`fixtures/popup-selfcheck.html`** — reproduces `popup/popup.html`'s
+  form markup by hand (kept in sync manually — update both when the popup's
+  fields change) and loads the real, unmodified `popup/popup.js` against
+  the `chrome.storage.local` mock. Real extension popups can't be driven
+  by this session's browser tooling directly, so this is how `popup.js`
+  gets automated coverage: checking a toggle, editing a threshold,
+  disabled-state tracking, and a settings change from elsewhere reflecting
+  back into the open form.
 - **`fixtures/settings-selfcheck.html`** — not a page-shape fixture;
   asserts `lib/settings.js`'s defaults, that `set()` merges rather than
   replaces, and that `onChange` fires with the fully-merged settings object
