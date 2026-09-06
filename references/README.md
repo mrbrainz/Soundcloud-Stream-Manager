@@ -19,3 +19,9 @@ MutationObserver patterns tuned to SoundCloud's *current* markup
 hidden a11y spans). Worth mining for SCSM 2.0's approach to auth and DOM
 matching rather than repeating v1's `resolve.json` + hardcoded `client_id`
 pattern.
+
+- **[popup-mockup-brainrot.html](popup-mockup-brainrot.html)** — standalone
+  visual mockup of a "Gen-Z brainrot" reskin of the popup UI (same six
+  settings as [popup.html](../extension/popup/popup.html), styled as neon
+  toggle cards with slang copy). Not wired to any extension code, just a
+  design pitch — open the file directly in a browser to view it.
