@@ -4,8 +4,8 @@
     {
       "name": "scsm-mock-fixtures",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8765", "--directory", "extension"],
-      "port": 8765
+      "runtimeArgs": ["extension/test/no-cache-server.py", "8766", "extension"],
+      "port": 8766
     }
   ]
 }

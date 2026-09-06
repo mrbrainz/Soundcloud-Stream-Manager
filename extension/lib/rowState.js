@@ -64,6 +64,17 @@
     showLink.style.color = '#3fa9f5';
     showLink.addEventListener('click', (e) => {
       e.preventDefault();
+      // A manual "show" click is a user override, not just an unwrap: mark
+      // it dismissed for this reason BEFORE restoring, so the feature that
+      // minimized it (which restore() below asks to rescan, so other
+      // features get a chance to annotate the now-visible row) doesn't
+      // immediately re-minimize it right back - see the "hidden track's
+      // show link doesn't restore the row" bug. A restore triggered by the
+      // feature itself (e.g. a threshold change the row no longer matches)
+      // does NOT go through this click handler, so it never sets this.
+      if (rowEl.dataset.scsmMinimizeReason) {
+        rowEl.dataset.scsmDismissedReason = rowEl.dataset.scsmMinimizeReason;
+      }
       restore(rowEl);
     });
     summary.appendChild(showLink);
@@ -98,5 +109,19 @@
     if (window.SCSMDom) window.SCSMDom.rescan();
   }
 
-  window.SCSMRowState = { minimize, restore, isMinimized };
+  // Whether the user explicitly clicked "show" to override this reason -
+  // a feature should check this before re-minimizing a row for the SAME
+  // reason on a later rescan (a rescan the user's own click triggers, via
+  // restore() above). Cleared when the feature that owns this reason is
+  // toggled off (see each feature's restoreOwnRows()), so a fresh
+  // enable/disable cycle gives it a clean slate.
+  function isDismissed(rowEl, reason) {
+    return rowEl.dataset.scsmDismissedReason === reason;
+  }
+
+  function clearDismissed(rowEl) {
+    delete rowEl.dataset.scsmDismissedReason;
+  }
+
+  window.SCSMRowState = { minimize, restore, isMinimized, isDismissed, clearDismissed };
 })();

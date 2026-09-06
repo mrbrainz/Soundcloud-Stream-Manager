@@ -45,13 +45,19 @@ something reads real page state correctly.
 
 ## Running it
 
-Any static file server works, rooted at `extension/` (not `extension/test/`
-— the fixtures' `../../lib/...` script paths need `lib/` and `content/` to
-be reachable as siblings of `test/`):
+Use `no-cache-server.py` (this directory), rooted at `extension/` (not
+`extension/test/` — the fixtures' `../../lib/...` script paths need `lib/`
+and `content/` to be reachable as siblings of `test/`):
 
 ```bash
-cd extension && python3 -m http.server 8765
+python3 extension/test/no-cache-server.py 8765 extension
 ```
+
+Plain `python3 -m http.server` also works functionally, but its weak
+cache headers mean a browser can keep serving yesterday's copy of a
+`<script src>` after you've edited the file — which reads exactly like a
+fix not working. `no-cache-server.py` sends `Cache-Control: no-store` on
+every response specifically to avoid that trap during iterative testing.
 
 Then open `http://localhost:8765/test/` and click into a fixture. Open devtools:
 `mocks/sc-api-mock.js` runs a self-test against every mocked endpoint on
