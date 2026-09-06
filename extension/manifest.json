@@ -29,7 +29,8 @@
         "lib/rowState.js",
         "content/content.js",
         "content/features/repostAge.js",
-        "content/features/hideOldTracks.js"
+        "content/features/hideOldTracks.js",
+        "content/features/hideLongTracks.js"
       ],
       "run_at": "document_idle",
       "all_frames": true
