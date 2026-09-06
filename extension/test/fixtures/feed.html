@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SCSM mock fixture — feed/library/search row shape</title>
+    <style>
+      body { font-family: sans-serif; max-width: 640px; margin: 24px auto; }
+      ul.soundList__list { list-style: none; padding: 0; }
+      li.soundList__item { border: 1px solid #ddd; padding: 10px; margin-bottom: 8px; border-radius: 4px; }
+      .soundTitle__title { font-weight: bold; text-decoration: none; color: #111; }
+      .sc-visuallyhidden { position: absolute; width: 1px; height: 1px; overflow: hidden; }
+      .fixture-note { color: #888; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <p class="fixture-note">
+      Feed/library/search share the same row markup (<code>li.soundList__item</code>
+      + <code>a.soundTitle__title</code>), so this one fixture covers all three
+      page types. See <a href="../README.md">test/README.md</a>.
+      <br />Open devtools console — the mocks self-test on load.
+    </p>
+
+    <ul class="soundList__list">
+      <!-- Old repost: should trigger "hide tracks older than X days" and show a large age -->
+      <li class="soundList__item">
+        <a class="sound__coverArt" href="/testartist/old-repost-track">[cover]</a>
+        <a class="soundTitle__title" href="/testartist/old-repost-track">Old Repost Track</a>
+        <span class="sc-ministats-reposts">reposted</span>
+        <time class="relativeTime" datetime="2026-08-20T10:00:00Z">
+          <span class="sc-visuallyhidden">Reposted 2 years ago</span>
+          <span aria-hidden="true">2y</span>
+        </time>
+      </li>
+
+      <!-- Recent repost: should NOT trigger the age filter -->
+      <li class="soundList__item">
+        <a class="sound__coverArt" href="/testartist/recent-repost-track">[cover]</a>
+        <a class="soundTitle__title" href="/testartist/recent-repost-track">Recent Repost Track</a>
+        <span class="sc-ministats-reposts">reposted</span>
+        <time class="relativeTime" datetime="2026-09-04T10:00:00Z">
+          <span class="sc-visuallyhidden">Reposted 2 days ago</span>
+          <span aria-hidden="true">2d</span>
+        </time>
+      </li>
+
+      <!-- Original upload, long mix: should trigger "hide tracks longer than X minutes" -->
+      <li class="soundList__item">
+        <a class="sound__coverArt" href="/testartist/long-mix">[cover]</a>
+        <a class="soundTitle__title" href="/testartist/long-mix">Long Mix Session</a>
+      </li>
+
+      <!-- Original upload, short + downloadable: happy path for download button / search links -->
+      <li class="soundList__item">
+        <a class="sound__coverArt" href="/testartist/short-downloadable-track">[cover]</a>
+        <a class="soundTitle__title" href="/testartist/short-downloadable-track">Short Downloadable Track</a>
+      </li>
+
+      <!-- Already in 2 of the mock user's playlists: happy path for playlist membership -->
+      <li class="soundList__item">
+        <a class="sound__coverArt" href="/testartist/in-playlist-track">[cover]</a>
+        <a class="soundTitle__title" href="/testartist/in-playlist-track">In Playlist Track</a>
+      </li>
+    </ul>
+
+    <!-- Mocks first, then real extension source, in the same order manifest.json loads them.
+         Absolute (server-root-relative) paths, matching standalone-track.html's fixture. -->
+    <script src="/test/mocks/chrome-mock.js"></script>
+    <script src="/test/mocks/data.js"></script>
+    <script src="/test/mocks/sc-api-mock.js"></script>
+    <script src="/lib/settings.js"></script>
+    <script src="/content/content.js"></script>
+  </body>
+</html>
