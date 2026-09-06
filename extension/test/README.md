@@ -62,6 +62,11 @@ over `http://`.)
   scenario in `mocks/data.js` (correctness, not just reachability — compare
   `mocks/sc-api-mock.js`'s own self-test, which only checks the mocked
   endpoints themselves respond).
+- **`fixtures/repostage-selfcheck.html`** — end-to-end test of
+  `content/features/repostAge.js`: toggling `showRepostAge` via
+  `lib/settings.js` and confirming reposts get the right "X old" badge, a
+  non-repost row never does, rescans don't duplicate badges, and toggling
+  off removes them all.
 - **`fixtures/rowstate-selfcheck.html`** — not a page-shape fixture;
   asserts `lib/rowState.js`'s minimize/show treatment in isolation
   (minimize hides original content behind a wrapper and shows a label +
