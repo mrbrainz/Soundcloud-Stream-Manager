@@ -9,6 +9,9 @@ console.log('[SCSM] content script loaded on', location.href);
 if (window.SCSMDom.isRelevantFrame()) {
   console.log('[SCSM] client_id:', window.SCSMAuth.getClientId(), '| user id:', window.SCSMAuth.getMyUserId());
 
+  window.SCSMSettings.get().then((settings) => console.log('[SCSM] settings loaded:', settings));
+  window.SCSMSettings.onChange((settings) => console.log('[SCSM] settings changed:', settings));
+
   window.SCSMDom.onScan((dirtyNodes) => {
     const anchors = dirtyNodes.flatMap((node) => window.SCSMDom.findTrackAnchors(node));
     if (anchors.length) {
