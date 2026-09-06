@@ -19,26 +19,37 @@
       <code>showRepostAge</code> via <code>lib/settings.js</code> and
       confirming <code>content/features/repostAge.js</code> annotates (and
       un-annotates) the right rows. See <a href="../README.md">test/README.md</a>.
+      Each repost row deliberately puts a reposting-user profile link (a
+      1-segment href) CLOSER to the "Reposted X ago" text than the real
+      track link, and gives the track link a plain, non-
+      <code>soundTitle__title</code> class - reproducing the live-SoundCloud
+      structure that broke this feature's permalink lookup (see
+      <a href="https://github.com/mrbrainz/Soundcloud-Stream-Manager/issues/8">#8</a>'s
+      follow-up fix).
     </p>
     <div id="results">running…</div>
 
     <ul>
       <li class="soundList__item" id="row-old-repost">
-        <a class="soundTitle__title" href="/testartist/old-repost-track">Old Repost Track</a>
+        <a class="sc-link-light" href="/repostuser123">RepostUser</a>
         <span class="sc-ministats-reposts">reposted</span>
         <time class="relativeTime" datetime="2023-01-15T10:00:00Z">
           <span class="sc-visuallyhidden">Reposted 2 years ago</span>
         </time>
+        <a class="sound__coverArt" href="/testartist/old-repost-track">[cover]</a>
+        <a class="trackLink" href="/testartist/old-repost-track">Old Repost Track</a>
       </li>
       <li class="soundList__item" id="row-recent-repost">
-        <a class="soundTitle__title" href="/testartist/recent-repost-track">Recent Repost Track</a>
+        <a class="sc-link-light" href="/repostuser123">RepostUser</a>
         <span class="sc-ministats-reposts">reposted</span>
         <time class="relativeTime" datetime="2026-09-04T10:00:00Z">
           <span class="sc-visuallyhidden">Reposted 2 days ago</span>
         </time>
+        <a class="sound__coverArt" href="/testartist/recent-repost-track">[cover]</a>
+        <a class="trackLink" href="/testartist/recent-repost-track">Recent Repost Track</a>
       </li>
       <li class="soundList__item" id="row-original">
-        <a class="soundTitle__title" href="/testartist/long-mix">Long Mix Session</a>
+        <a class="trackLink" href="/testartist/long-mix">Long Mix Session</a>
       </li>
     </ul>
 
