@@ -62,6 +62,10 @@ over `http://`.)
   scenario in `mocks/data.js` (correctness, not just reachability — compare
   `mocks/sc-api-mock.js`'s own self-test, which only checks the mocked
   endpoints themselves respond).
+- **`fixtures/dom-selfcheck.html`** — not a page-shape fixture; asserts
+  `lib/dom.js`'s row matching (`findTrackAnchors`, `permalinkPathFromHref`)
+  and its shared scan loop (`onScan`, `rescan`), including that a
+  dynamically-added row is picked up by the MutationObserver batch.
 - **`fixtures/standalone-track.html`** — the standalone
   `soundcloud.com/artist/track` page shape: SoundCloud renders this inside a
   same-origin `webiIframe` with a plain `<h1>` and no
