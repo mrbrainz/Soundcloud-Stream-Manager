@@ -27,10 +27,12 @@
         "lib/api.js",
         "lib/dom.js",
         "lib/rowState.js",
+        "lib/iconRow.js",
         "content/content.js",
         "content/features/repostAge.js",
         "content/features/hideOldTracks.js",
-        "content/features/hideLongTracks.js"
+        "content/features/hideLongTracks.js",
+        "content/features/searchLinks.js"
       ],
       "run_at": "document_idle",
       "all_frames": true

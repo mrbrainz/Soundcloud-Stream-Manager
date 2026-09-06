@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SCSM mock fixture — search links feature self-check</title>
+    <style>
+      body { font-family: sans-serif; max-width: 640px; margin: 24px auto; }
+      .fixture-note { color: #888; font-size: 12px; }
+      #results { font-family: monospace; white-space: pre-wrap; }
+      .pass { color: #1a7f37; }
+      .fail { color: #cf222e; }
+      li.soundList__item { border: 1px solid #ddd; padding: 8px; margin-bottom: 6px; }
+    </style>
+  </head>
+  <body>
+    <p class="fixture-note">
+      Exercises "show search links" end-to-end: toggling
+      <code>showSearchLinks</code> via <code>lib/settings.js</code>,
+      confirming <code>content/features/searchLinks.js</code> builds the
+      right query and URLs, shares the icon row with other features (via
+      <code>lib/iconRow.js</code>), and correctly skips/resumes on a
+      minimized row. See <a href="../README.md">test/README.md</a>.
+    </p>
+    <div id="results">running…</div>
+
+    <ul>
+      <li class="soundList__item" id="row-dl">
+        <a class="soundTitle__title" href="/testartist/short-downloadable-track">Short Downloadable Track</a>
+      </li>
+      <li class="soundList__item" id="row-old-original">
+        <a class="soundTitle__title" href="/testartist/in-playlist-track">In Playlist Track</a>
+      </li>
+    </ul>
+
+    <script src="/test/mocks/chrome-mock.js"></script>
+    <script src="/test/mocks/data.js"></script>
+    <script src="/test/mocks/sc-api-mock.js"></script>
+    <script src="/lib/settings.js"></script>
+    <script src="/lib/auth.js"></script>
+    <script src="/lib/api.js"></script>
+    <script src="/lib/dom.js"></script>
+    <script src="/lib/rowState.js"></script>
+    <script src="/lib/iconRow.js"></script>
+    <script src="/content/features/searchLinks.js"></script>
+    <script>
+      (async function () {
+        const out = document.getElementById('results');
+        const lines = [];
+        let failures = 0;
+
+        function check(label, actual, expected) {
+          const ok = JSON.stringify(actual) === JSON.stringify(expected);
+          if (!ok) failures++;
+          lines.push(
+            `${ok ? 'PASS' : 'FAIL'} ${label}` +
+              (ok ? '' : ` — expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`)
+          );
+        }
+        function wait(ms) {
+          return new Promise((resolve) => setTimeout(resolve, ms));
+        }
+        function linksIn(id) {
+          return document.getElementById(id).querySelectorAll('.scsm-search-link');
+        }
+
+        await wait(30);
+        check('no links before the feature is enabled', linksIn('row-dl').length, 0);
+
+        await window.SCSMSettings.set({ showSearchLinks: true });
+        await wait(100);
+
+        check('4 platform links are rendered', linksIn('row-dl').length, 4);
+        const deezerLink = document.querySelector('#row-dl .scsm-search-link-deezer');
+        // short-downloadable-track's artist is "DJ O'Brien-Smith" (mocks/data.js) -
+        // punctuation should be stripped from the query.
+        check(
+          'the query strips punctuation from title+artist',
+          decodeURIComponent(new URL(deezerLink.href).pathname.split('/search/')[1]),
+          'DJ O Brien Smith Short Downloadable Track'
+        );
+        check('each platform points at its own domain', [...linksIn('row-dl')].map((a) => new URL(a.href).hostname), [
+          'www.deezer.com',
+          'music.apple.com',
+          'www.beatport.com',
+          'open.spotify.com',
+        ]);
+
+        // ---- idempotency: rescanning doesn't duplicate links ----
+        window.SCSMDom.rescan();
+        await wait(50);
+        check('rescanning does not duplicate links', linksIn('row-dl').length, 4);
+
+        // ---- shares the icon row with content already in it (simulating a future download-button icon) ----
+        const container = window.SCSMIconRow.getOrCreateIconRow(document.getElementById('row-old-original'));
+        const marker = document.createElement('span');
+        marker.className = 'other-feature-icon';
+        container.appendChild(marker);
+        window.SCSMDom.rescan();
+        await wait(100);
+        check('search links coexist with another feature\'s icon in the same row', linksIn('row-old-original').length, 4);
+        check('the other feature\'s icon is untouched', !!document.querySelector('#row-old-original .other-feature-icon'), true);
+
+        // ---- a minimized row is skipped, and resumes once restored ----
+        const row = document.getElementById('row-dl');
+        // Clear out this row's links first so we can observe them reappear.
+        linksIn('row-dl').forEach((el) => el.remove());
+        window.SCSMRowState.minimize(row, 'Short Downloadable Track — manually minimized', { reason: 'test' });
+        window.SCSMDom.rescan();
+        await wait(100);
+        check('a minimized row gets no new links while minimized', linksIn('row-dl').length, 0);
+
+        window.SCSMRowState.restore(row); // this also triggers SCSMDom.rescan() internally
+        await wait(100);
+        check('restoring the row lets search links render again', linksIn('row-dl').length, 4);
+
+        // ---- toggling off removes every link ----
+        await window.SCSMSettings.set({ showSearchLinks: false });
+        await wait(30);
+        check('toggling off removes all links', document.querySelectorAll('.scsm-search-link').length, 0);
+        check('toggling off does not remove other features\' icons', !!document.querySelector('#row-old-original .other-feature-icon'), true);
+
+        out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
+        out.className = failures === 0 ? 'pass' : 'fail';
+        console.log('[SCSM selfcheck]', failures === 0 ? 'ALL PASSED' : failures + ' FAILED', lines);
+      })();
+    </script>
+  </body>
+</html>

@@ -89,6 +89,13 @@
 
     delete rowEl.dataset.scsmMinimized;
     delete rowEl.dataset.scsmMinimizeReason;
+
+    // Other features (search links, download button) deliberately skip
+    // rendering into a minimized row - trigger a rescan so anything that
+    // held off while this row was hidden gets a chance to annotate it now
+    // that it's visible again. Guarded since some callers (e.g. this
+    // module's own fixture) use rowState in isolation without lib/dom.js.
+    if (window.SCSMDom) window.SCSMDom.rescan();
   }
 
   window.SCSMRowState = { minimize, restore, isMinimized };
