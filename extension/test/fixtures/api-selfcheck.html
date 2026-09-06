@@ -57,7 +57,14 @@
         const dl = await window.SCSMApi.resolveByPermalinkPath('/testartist/short-downloadable-track');
         check('short-downloadable-track downloadable', dl && dl.downloadable, true);
         check('short-downloadable-track id', dl && dl.id, 1004);
-        check('artist comes from the track\'s user.username', dl && dl.artist, "DJ O'Brien-Smith");
+        check('artist falls back to the track\'s user.username when there\'s no publisher_metadata', dl && dl.artist, "DJ O'Brien-Smith");
+
+        const labelTrack = await window.SCSMApi.resolveByPermalinkPath('/nawtyrecords/label-track');
+        check(
+          'artist prefers publisher_metadata.artist over the uploading account\'s username',
+          labelTrack && labelTrack.artist,
+          'Neumonic'
+        );
 
         const missing = await window.SCSMApi.resolveByPermalinkPath('/testartist/does-not-exist');
         check('unresolvable permalink returns null', missing, null);

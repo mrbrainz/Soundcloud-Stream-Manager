@@ -84,7 +84,15 @@
     const data = {
       id: track.id,
       title: track.title || null,
-      artist: (track.user && track.user.username) || null,
+      // Prefer publisher_metadata.artist over the uploading account's
+      // username - labels/aggregator accounts routinely post under a
+      // different name than the actual artist (confirmed live: a track
+      // uploaded by the "Nawty Records" account with publisher_metadata.artist
+      // "Neumonic" - searching platforms for "Nawty Records <title>" would
+      // rarely find the real release). Matches user.username for a plain
+      // self-uploader (confirmed live too), so this is safe as a blanket
+      // preference, not just a label-specific special case.
+      artist: (track.publisher_metadata && track.publisher_metadata.artist) || (track.user && track.user.username) || null,
       permalinkPath: path,
       createdAt: track.created_at || track.display_date || null,
       duration: typeof track.duration === 'number' ? track.duration : null,

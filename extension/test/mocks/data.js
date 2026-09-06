@@ -66,6 +66,20 @@ window.__SCSM_MOCK_DATA__ = {
       downloadable: false,
       user: { username: 'Test Artist' },
     },
+    // A label/aggregator upload: the account is NOT the real artist. Real
+    // example confirmed live (see #36): soundcloud.com/nawtyrecords posts
+    // as "Nawty Records" but publisher_metadata.artist is "Neumonic".
+    '/nawtyrecords/label-track': {
+      id: 1006,
+      kind: 'track',
+      title: 'Neumonic - Massive',
+      permalink_url: 'https://soundcloud.com/nawtyrecords/label-track',
+      created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
+      duration: 200000,
+      downloadable: false,
+      user: { username: 'Nawty Records' },
+      publisher_metadata: { artist: 'Neumonic' },
+    },
   },
 
   // GET /users/{id}/playlists — one page, matches the shape
