@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Soundcloud Stream Manager",
+  "version": "2.0.0",
+  "description": "Manage your SoundCloud stream: repost age, playlist membership, hide old/long tracks, cross-platform search links, legacy downloads.",
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": ["storage"],
+  "host_permissions": ["https://soundcloud.com/*", "https://api-v2.soundcloud.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://soundcloud.com/*"],
+      "js": ["lib/settings.js", "content/content.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ]
+}
