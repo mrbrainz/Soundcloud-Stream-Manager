@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SCSM mock fixture — lib/rowState.js self-check</title>
+    <style>
+      body { font-family: sans-serif; max-width: 640px; margin: 24px auto; }
+      .fixture-note { color: #888; font-size: 12px; }
+      #results { font-family: monospace; white-space: pre-wrap; }
+      .pass { color: #1a7f37; }
+      .fail { color: #cf222e; }
+      li.soundList__item { border: 1px solid #ddd; padding: 8px; margin-bottom: 6px; }
+    </style>
+  </head>
+  <body>
+    <p class="fixture-note">
+      Exercises <code>lib/rowState.js</code>'s minimize/show treatment in
+      isolation (no feed/API mocking needed - it only touches whatever row
+      element it's given). See <a href="../README.md">test/README.md</a>.
+    </p>
+    <div id="results">running…</div>
+
+    <ul>
+      <li class="soundList__item" id="row-a">
+        <a class="soundTitle__title" href="/testartist/old-repost-track">Old Repost Track</a>
+        <span class="extra-child">some other row content</span>
+      </li>
+    </ul>
+
+    <script src="/lib/rowState.js"></script>
+    <script>
+      (function () {
+        const out = document.getElementById('results');
+        const lines = [];
+        let failures = 0;
+
+        function check(label, actual, expected) {
+          const ok = JSON.stringify(actual) === JSON.stringify(expected);
+          if (!ok) failures++;
+          lines.push(
+            `${ok ? 'PASS' : 'FAIL'} ${label}` +
+              (ok ? '' : ` — expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`)
+          );
+        }
+
+        const row = document.getElementById('row-a');
+        const originalChildCount = row.children.length;
+
+        check('isMinimized() is false before minimizing', window.SCSMRowState.isMinimized(row), false);
+
+        window.SCSMRowState.minimize(row, 'Old Repost Track — 2y old', { reason: 'old' });
+        check('isMinimized() is true after minimizing', window.SCSMRowState.isMinimized(row), true);
+        check('minimize reason is recorded', row.dataset.scsmMinimizeReason, 'old');
+
+        const summary = row.querySelector(':scope > .scsm-row-summary');
+        check('a summary line is rendered', !!summary, true);
+        check('the summary shows the given label', summary && summary.textContent.includes('Old Repost Track — 2y old'), true);
+        check('the summary includes a show link', !!(summary && summary.querySelector('.scsm-row-show-link')), true);
+
+        const wrapper = row.querySelector(':scope > .scsm-row-original');
+        check('original content is hidden, not removed', wrapper && wrapper.style.display === 'none', true);
+        check('original content is preserved inside the wrapper', wrapper && wrapper.children.length, originalChildCount);
+        check('the visible anchor is gone once minimized', !!row.querySelector(':scope > a.soundTitle__title'), false);
+
+        // ---- idempotency: minimizing an already-minimized row updates the label, doesn't duplicate it ----
+        window.SCSMRowState.minimize(row, 'Old Repost Track — 2y1mo old', { reason: 'old' });
+        check('minimizing again does not add a second summary', row.querySelectorAll(':scope > .scsm-row-summary').length, 1);
+        check('minimizing again updates the label', row.querySelector('.scsm-row-summary-text').textContent, 'Old Repost Track — 2y1mo old');
+
+        // ---- clicking "show" restores the row ----
+        row.querySelector('.scsm-row-show-link').click();
+        check('isMinimized() is false after clicking show', window.SCSMRowState.isMinimized(row), false);
+        check('the summary is removed after restoring', !!row.querySelector(':scope > .scsm-row-summary'), false);
+        check('the original anchor is back after restoring', !!row.querySelector(':scope > a.soundTitle__title'), true);
+        check('restoring puts back exactly the original children', row.children.length, originalChildCount);
+
+        // ---- restoring an already-restored row is a no-op ----
+        window.SCSMRowState.restore(row);
+        check('restoring an already-restored row does not throw or change child count', row.children.length, originalChildCount);
+
+        out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
+        out.className = failures === 0 ? 'pass' : 'fail';
+        console.log('[SCSM selfcheck]', failures === 0 ? 'ALL PASSED' : failures + ' FAILED', lines);
+      })();
+    </script>
+  </body>
+</html>
