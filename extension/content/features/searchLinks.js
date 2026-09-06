@@ -23,7 +23,15 @@
   // alphanumerics/spaces, then collapse repeated whitespace.
   function buildQuery(track, anchor) {
     const title = (track && track.title) || anchor.textContent.trim();
-    const raw = track && track.artist ? `${track.artist} ${title}` : title;
+    const artist = track && track.artist;
+    // Uploaders who set a real artist name (see lib/api.js's
+    // publisher_metadata.artist preference) very often ALSO bake it into
+    // the title itself (confirmed live - #36/#37: "Neumonic - Massive"
+    // with artist "Neumonic"), which would otherwise duplicate it in the
+    // query ("Neumonic Neumonic Massive"). Skip prepending when the title
+    // already contains the artist name anywhere, case-insensitively.
+    const titleAlreadyHasArtist = artist && title.toLowerCase().includes(artist.toLowerCase());
+    const raw = artist && !titleAlreadyHasArtist ? `${artist} ${title}` : title;
     return raw.replace(/[^a-zA-Z0-9 ]/g, ' ').trim().replace(/\s{2,}/g, ' ');
   }
 
