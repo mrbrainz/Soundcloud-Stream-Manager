@@ -30,6 +30,6 @@ h1 {
   margin: 0 4px;
 }
 
-.threshold:disabled {
-  opacity: 0.4;
+.threshold--inactive {
+  opacity: 0.5;
 }

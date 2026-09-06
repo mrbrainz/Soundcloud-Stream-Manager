@@ -78,7 +78,21 @@
         // ---- initial render reflects defaults ----
         check('showRepostAge starts unchecked (default off)', document.getElementById('showRepostAge').checked, false);
         check('hideOldTracksDays starts at 30', document.getElementById('hideOldTracksDays').value, '30');
-        check('hideOldTracksDays starts disabled (hideOldTracks is off)', document.getElementById('hideOldTracksDays').disabled, true);
+        check('hideOldTracksDays gets the "inactive" style while hideOldTracks is off', document.getElementById('hideOldTracksDays').classList.contains('threshold--inactive'), true);
+        check(
+          'hideOldTracksDays is NOT disabled while off - editable before turning the feature on',
+          document.getElementById('hideOldTracksDays').disabled,
+          false
+        );
+
+        // ---- editing the threshold BEFORE enabling the feature still persists ----
+        const daysInputWhileOff = document.getElementById('hideOldTracksDays');
+        daysInputWhileOff.value = '45';
+        fire(daysInputWhileOff, 'change');
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        const settingsWhileOff = await window.SCSMSettings.get();
+        check('editing the threshold while the feature is off still persists the value', settingsWhileOff.hideOldTracksDays, 45);
+        check('editing the threshold while off does not turn the feature on', settingsWhileOff.hideOldTracks, false);
 
         // ---- checking a toggle persists to settings ----
         const repostAge = document.getElementById('showRepostAge');
@@ -88,12 +102,17 @@
         const afterToggle = await window.SCSMSettings.get();
         check('checking a toggle calls SCSMSettings.set()', afterToggle.showRepostAge, true);
 
-        // ---- checking hideOldTracks enables its threshold input ----
+        // ---- checking hideOldTracks removes its threshold's "inactive" style ----
         const hideOld = document.getElementById('hideOldTracks');
         hideOld.checked = true;
         fire(hideOld, 'change');
         await new Promise((resolve) => setTimeout(resolve, 20));
-        check('hideOldTracksDays becomes enabled once hideOldTracks is checked', document.getElementById('hideOldTracksDays').disabled, false);
+        check(
+          'hideOldTracksDays loses the "inactive" style once hideOldTracks is checked',
+          document.getElementById('hideOldTracksDays').classList.contains('threshold--inactive'),
+          false
+        );
+        check('the value set while off (45) carried through to being turned on', document.getElementById('hideOldTracksDays').value, '45');
 
         // ---- editing a threshold persists the new value ----
         const daysInput = document.getElementById('hideOldTracksDays');
