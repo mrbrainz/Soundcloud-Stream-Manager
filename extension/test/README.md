@@ -73,6 +73,11 @@ over `http://`.)
   alone, raising/lowering `hideOldTracksDays` restores/re-minimizes rows
   live, the "show" link works while the feature stays on, and toggling the
   feature off restores everything it minimized.
+- **`fixtures/hidelongtracks-selfcheck.html`** — end-to-end test of
+  `content/features/hideLongTracks.js`: toggling `hideLongTracks`
+  minimizes long rows by duration alone (a short REPOST is left alone,
+  proving it's not conflated with hideOldTracks), threshold raise/lower
+  restores/re-minimizes live, and toggling off restores everything.
 - **`fixtures/rowstate-selfcheck.html`** — not a page-shape fixture;
   asserts `lib/rowState.js`'s minimize/show treatment in isolation
   (minimize hides original content behind a wrapper and shows a label +
