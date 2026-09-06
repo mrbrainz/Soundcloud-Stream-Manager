@@ -28,6 +28,21 @@ loads, that source has no idea it isn't running as a content script on
 `soundcloud.com` — nothing in `extension/lib` or `extension/content` needs
 mock-awareness or test-only branches.
 
+**A real limitation this harness can't catch:** every fixture script tag
+runs in one shared JS context, but a real Manifest V3 content script runs
+in an *isolated world* — same DOM as the page, but a separate `window` for
+JS-level globals. `window.__sc_hydration` is a plain JS global the page's
+own bundle sets in its *main* world, so it's invisible to the isolated
+world by default; live testing (see #15) found this the hard way when
+`getClientId()` always returned `null` in production despite fixtures
+passing throughout. `content/mainWorldBridge.js` (loaded in fixtures like
+any other real source file, via `"world": "MAIN"` in `manifest.json` for
+the actual extension) bridges this by republishing `client_id`/the user id
+onto a DOM attribute both worlds can see — but the fixtures can't exercise
+the *actual* world-isolation boundary itself, only the bridge's own
+extraction logic. Keep this in mind before trusting a fixture pass as proof
+something reads real page state correctly.
+
 ## Running it
 
 Any static file server works, rooted at `extension/` (not `extension/test/`
@@ -148,7 +163,9 @@ permalink path from a fixture's markup. No other file needs to change.
 - **Mocked:** `window.fetch` for anything hitting `api-v2.soundcloud.com`
   (`/resolve`, `/tracks/{id}`, `/users/{id}/playlists`),
   `window.__sc_hydration`, the `oauth_token` cookie, and
-  `chrome.storage.local`/`chrome.storage.onChanged`.
+  `chrome.storage.local`/`chrome.storage.onChanged`. Note that
+  `window.__sc_hydration` is only reachable at all because fixtures don't
+  simulate the isolated/main-world split — see the callout above.
 - **Real:** every file under `extension/lib/` and `extension/content/` —
   the actual feature logic, unmodified.
 - **Not covered here:** the popup (`extension/popup/`) isn't wired into
