@@ -67,6 +67,12 @@ over `http://`.)
   `lib/settings.js` and confirming reposts get the right "X old" badge, a
   non-repost row never does, rescans don't duplicate badges, and toggling
   off removes them all.
+- **`fixtures/hideoldtracks-selfcheck.html`** — end-to-end test of
+  `content/features/hideOldTracks.js`: toggling `hideOldTracks` minimizes
+  old rows uniformly (reposts AND original uploads), a recent row is left
+  alone, raising/lowering `hideOldTracksDays` restores/re-minimizes rows
+  live, the "show" link works while the feature stays on, and toggling the
+  feature off restores everything it minimized.
 - **`fixtures/rowstate-selfcheck.html`** — not a page-shape fixture;
   asserts `lib/rowState.js`'s minimize/show treatment in isolation
   (minimize hides original content behind a wrapper and shows a label +
