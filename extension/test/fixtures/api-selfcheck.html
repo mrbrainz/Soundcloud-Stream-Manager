@@ -82,6 +82,18 @@
         const cached = window.SCSMApi.getCachedByPermalinkPath('/testartist/in-playlist-track');
         check('getCachedByPermalinkPath returns the cached record', cached && cached.id, 1005);
 
+        // ---- setPlaylistsForTrackId: already-cached track updates immediately ----
+        await window.SCSMApi.setPlaylistsForTrackId(1005, [{ id: 5001, title: 'My Favourites' }]);
+        const withPlaylists = window.SCSMApi.getCachedByPermalinkPath('/testartist/in-playlist-track');
+        check('setPlaylistsForTrackId updates an already-cached track', withPlaylists.playlists, [{ id: 5001, title: 'My Favourites' }]);
+
+        // ---- setPlaylistsForTrackId: not-yet-resolved track holds pending, merges on first resolve ----
+        await window.SCSMApi.setPlaylistsForTrackId(1002, [{ id: 5002, title: 'Techno 2026' }]);
+        const notYetCached = window.SCSMApi.getCachedByPermalinkPath('/testartist/recent-repost-track');
+        check('a pending track has no cache entry yet', notYetCached, null);
+        const resolved = await window.SCSMApi.resolveByPermalinkPath('/testartist/recent-repost-track');
+        check('resolving picks up the pending playlists', resolved.playlists, [{ id: 5002, title: 'Techno 2026' }]);
+
         out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
         out.className = failures === 0 ? 'pass' : 'fail';
         console.log('[SCSM selfcheck]', failures === 0 ? 'ALL PASSED' : failures + ' FAILED', lines);

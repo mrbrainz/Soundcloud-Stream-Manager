@@ -89,6 +89,14 @@ over `http://`.)
   confirmed-downloadable track, the link carries the real `download_url`
   and `client_id`, shares the icon row with other features, and the same
   minimize/restore skip-and-resume behavior as the search links fixture.
+- **`fixtures/playlistmembership-selfcheck.html`** — end-to-end test of
+  `content/features/playlistMembership.js`: the initial crawl badges the
+  right tracks from `mocks/data.js`'s `playlistsPage`, and live sync -
+  adding a track (PUT) and deleting a playlist (DELETE) - updates badges
+  immediately. Installs a fake `XMLHttpRequest` class before the feature
+  script loads so `patchXHR()`'s real open/send-wrapping code runs against
+  a script-constructed request instead of a real network call, since this
+  session's tooling can't drive an actual PUT/DELETE against SoundCloud.
 - **`fixtures/rowstate-selfcheck.html`** — not a page-shape fixture;
   asserts `lib/rowState.js`'s minimize/show treatment in isolation
   (minimize hides original content behind a wrapper and shows a label +

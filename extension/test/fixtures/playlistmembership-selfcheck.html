@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SCSM mock fixture — playlist membership feature self-check</title>
+    <style>
+      body { font-family: sans-serif; max-width: 640px; margin: 24px auto; }
+      .fixture-note { color: #888; font-size: 12px; }
+      #results { font-family: monospace; white-space: pre-wrap; }
+      .pass { color: #1a7f37; }
+      .fail { color: #cf222e; }
+      li.soundList__item { border: 1px solid #ddd; padding: 8px; margin-bottom: 6px; }
+    </style>
+  </head>
+  <body>
+    <p class="fixture-note">
+      Exercises "show playlist membership" end-to-end against
+      <code>mocks/data.js</code>'s <code>playlistsPage</code> (2 playlists:
+      "My Favourites" contains in-playlist-track; "Techno 2026" contains
+      in-playlist-track AND recent-repost-track): the initial crawl,
+      badging, and live add/remove/delete sync via a fake
+      <code>XMLHttpRequest</code> (this session's tooling can't drive a
+      real network PUT/DELETE, so the fake XHR lets
+      <code>content/features/playlistMembership.js</code>'s real
+      patch-and-diff logic run against a script-triggered request instead).
+      See <a href="../README.md">test/README.md</a>.
+    </p>
+    <div id="results">running…</div>
+
+    <ul>
+      <li class="soundList__item" id="row-in-playlist">
+        <a class="soundTitle__title" href="/testartist/in-playlist-track">In Playlist Track</a>
+      </li>
+      <li class="soundList__item" id="row-recent-repost">
+        <a class="soundTitle__title" href="/testartist/recent-repost-track">Recent Repost Track</a>
+      </li>
+      <li class="soundList__item" id="row-old-repost">
+        <a class="soundTitle__title" href="/testartist/old-repost-track">Old Repost Track</a>
+      </li>
+    </ul>
+
+    <script>
+      // Installed BEFORE the feature script so its (lazy, on-first-enable)
+      // patchXHR() wraps THIS class's prototype instead of the real
+      // XMLHttpRequest - lets the test fire a script-triggered "network"
+      // request without hitting the actual network, exercising the same
+      // open/send-wrapping and 'load'-listener code the real extension
+      // runs, just against a request the test constructs by hand.
+      class FakeXHR extends EventTarget {
+        open(method, url) {
+          this.method = method;
+          this.url = url;
+        }
+        send(body) {
+          this.body = body;
+        }
+      }
+      window.XMLHttpRequest = FakeXHR;
+    </script>
+    <script src="/test/mocks/chrome-mock.js"></script>
+    <script src="/test/mocks/data.js"></script>
+    <script src="/test/mocks/sc-api-mock.js"></script>
+    <script src="/lib/settings.js"></script>
+    <script src="/lib/auth.js"></script>
+    <script src="/lib/api.js"></script>
+    <script src="/lib/dom.js"></script>
+    <script src="/lib/rowState.js"></script>
+    <script src="/content/features/playlistMembership.js"></script>
+    <script>
+      (async function () {
+        const out = document.getElementById('results');
+        const lines = [];
+        let failures = 0;
+
+        function check(label, actual, expected) {
+          const ok = JSON.stringify(actual) === JSON.stringify(expected);
+          if (!ok) failures++;
+          lines.push(
+            `${ok ? 'PASS' : 'FAIL'} ${label}` +
+              (ok ? '' : ` — expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`)
+          );
+        }
+        function wait(ms) {
+          return new Promise((resolve) => setTimeout(resolve, ms));
+        }
+        function badgeTextIn(id) {
+          const badge = document.getElementById(id).querySelector('.scsm-playlist-badge');
+          return badge ? badge.textContent.trim() : null;
+        }
+        function fireFakeXHR(method, url, bodyObj) {
+          const xhr = new XMLHttpRequest();
+          xhr.open(method, url);
+          xhr.send(bodyObj ? JSON.stringify(bodyObj) : undefined);
+          xhr.status = 200;
+          xhr.dispatchEvent(new Event('load'));
+        }
+
+        await wait(30);
+        check('no badges before the feature is enabled', badgeTextIn('row-in-playlist'), null);
+
+        await window.SCSMSettings.set({ showPlaylistMembership: true });
+        await wait(250); // crawl (with its 250ms inter-page delay) + initial rescan/resolve
+
+        check('a track in 2 playlists shows the ">1" label', badgeTextIn('row-in-playlist'), '✓ in 2 playlists');
+        check('a track in exactly 1 playlist names it', badgeTextIn('row-recent-repost'), '✓ in "Techno 2026"');
+        check('a track in no playlists gets no badge', badgeTextIn('row-old-repost'), null);
+
+        // ---- idempotency: rescanning doesn't duplicate the badge ----
+        window.SCSMDom.rescan();
+        await wait(100);
+        check(
+          'rescanning does not duplicate the badge',
+          document.getElementById('row-in-playlist').querySelectorAll('.scsm-playlist-badge').length,
+          1
+        );
+
+        // ---- live sync: adding old-repost-track to "My Favourites" (5001) via a PUT ----
+        fireFakeXHR('PUT', 'https://api-v2.soundcloud.com/playlists/5001', { playlist: { tracks: [1005, 1001] } });
+        await wait(100);
+        check('adding a track to a playlist (PUT) badges it live', badgeTextIn('row-old-repost'), '✓ in "My Favourites"');
+        check(
+          'the other member of that playlist is unaffected',
+          badgeTextIn('row-in-playlist'),
+          '✓ in 2 playlists'
+        );
+
+        // ---- live sync: deleting "Techno 2026" (5002) ----
+        fireFakeXHR('DELETE', 'https://api-v2.soundcloud.com/playlists/5002');
+        await wait(100);
+        check('deleting a playlist removes the badge for a track that was ONLY in it', badgeTextIn('row-recent-repost'), null);
+        check(
+          'deleting a playlist downgrades a track that was in it AND another to just the other',
+          badgeTextIn('row-in-playlist'),
+          '✓ in "My Favourites"'
+        );
+
+        // ---- a minimized row is skipped, and resumes once restored ----
+        const row = document.getElementById('row-old-repost');
+        document.querySelectorAll('#row-old-repost .scsm-playlist-badge').forEach((el) => el.remove());
+        window.SCSMRowState.minimize(row, 'Old Repost Track — manually minimized', { reason: 'test' });
+        window.SCSMDom.rescan();
+        await wait(100);
+        check('a minimized row gets no badge while minimized', badgeTextIn('row-old-repost'), null);
+
+        window.SCSMRowState.restore(row); // triggers SCSMDom.rescan() internally
+        await wait(100);
+        check('restoring the row lets the badge render again', badgeTextIn('row-old-repost'), '✓ in "My Favourites"');
+
+        // ---- toggling off removes every badge ----
+        await window.SCSMSettings.set({ showPlaylistMembership: false });
+        await wait(30);
+        check('toggling off removes all badges', document.querySelectorAll('.scsm-playlist-badge').length, 0);
+
+        // ---- toggling back on does not re-crawl (no duplicate playlists appearing) ----
+        await window.SCSMSettings.set({ showPlaylistMembership: true });
+        await wait(100);
+        check('toggling back on re-badges from the already-crawled cache', badgeTextIn('row-old-repost'), '✓ in "My Favourites"');
+
+        out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
+        out.className = failures === 0 ? 'pass' : 'fail';
+        console.log('[SCSM selfcheck]', failures === 0 ? 'ALL PASSED' : failures + ' FAILED', lines);
+      })();
+    </script>
+  </body>
+</html>

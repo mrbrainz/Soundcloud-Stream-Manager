@@ -33,7 +33,8 @@
         "content/features/hideOldTracks.js",
         "content/features/hideLongTracks.js",
         "content/features/searchLinks.js",
-        "content/features/downloadButton.js"
+        "content/features/downloadButton.js",
+        "content/features/playlistMembership.js"
       ],
       "run_at": "document_idle",
       "all_frames": true
