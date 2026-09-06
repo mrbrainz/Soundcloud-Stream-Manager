@@ -26,6 +26,17 @@ the bookmarklet delivery model, whether to keep scraping SoundCloud's DOM at
 all) has been decided yet — that's what the board is for. Don't assume the v1
 approach carries forward; treat it as reference/prior art, not a foundation.
 
+## Reference material
+
+[`references/`](../references) holds two working Tampermonkey userscripts
+(SoundCloud Repost Age, SoundCloud Playlist Membership) kept as prior art —
+see [references/README.md](../references/README.md). They demonstrate a
+current, working approach to the same class of problem SCSM v1 rotted on:
+reading `client_id` live from `window.__sc_hydration` instead of hardcoding
+it, authenticated `api-v2.soundcloud.com` calls via the `oauth_token` cookie,
+and DOM/MutationObserver patterns tuned to SoundCloud's current markup. Worth
+consulting before deciding SCSM 2.0's own approach to auth and DOM matching.
+
 ## Terminology
 
 - **Bookmarklet** — the `javascript:` URI in [README.md](../README.md) and
