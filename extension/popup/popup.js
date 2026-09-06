@@ -11,9 +11,9 @@
     'showSearchLinks',
     'showDownloadButton',
   ];
-  // Which toggle each threshold input belongs to, so its enabled/disabled
-  // state (and only that) tracks the toggle without needing its own entry
-  // in TOGGLE_IDS.
+  // Which toggle each threshold input belongs to, so its "not active yet"
+  // styling (and only that) tracks the toggle without needing its own
+  // entry in TOGGLE_IDS.
   const THRESHOLD_IDS = {
     hideOldTracks: 'hideOldTracksDays',
     hideLongTracks: 'hideLongTracksMinutes',
@@ -29,7 +29,11 @@
       if (!thresholdEl) return;
       // Don't clobber a value the user is actively typing into.
       if (document.activeElement !== thresholdEl) thresholdEl.value = settings[thresholdId];
-      thresholdEl.disabled = !settings[toggleId];
+      // Deliberately NOT `.disabled` - a user should be able to set their
+      // preferred threshold before turning the feature on, not be forced
+      // to enable it first just to type a number. The dimmed style is a
+      // "doesn't apply yet" hint only, not a block on editing.
+      thresholdEl.classList.toggle('threshold--inactive', !settings[toggleId]);
     });
   }
 
