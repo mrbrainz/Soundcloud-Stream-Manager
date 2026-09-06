@@ -63,14 +63,37 @@
     return leaf.parentElement || leaf;
   }
 
+  // Track permalinks are /artist/track (2 segments); playlists are
+  // /artist/sets/name. Deliberately NOT scoped to the shared DOM layer's
+  // a.soundTitle__title selector (see findTrackAnchors in lib/dom.js) -
+  // live-verification against real soundcloud.com (see #15) found the
+  // anchor nearest a repost's "Reposted X ago" text isn't reliably that
+  // specific class (e.g. it may be the cover-art link instead), so this
+  // matches by href SHAPE on any anchor, exactly like the proven-working
+  // references/soundcloud-repost-age.user.js did.
+  const TRACK_HREF_RE = /^\/([^/]+)\/([^/]+)$/;
+  const PLAYLIST_HREF_RE = /^\/([^/]+)\/sets\/([^/]+)$/;
+
+  function findPermalinkIn(container) {
+    if (!container.querySelectorAll) return null;
+    const links = container.querySelectorAll('a[href^="/"]');
+    for (const a of links) {
+      const href = a.getAttribute('href');
+      if (!href) continue;
+      if (TRACK_HREF_RE.test(href) || PLAYLIST_HREF_RE.test(href)) return href;
+    }
+    return null;
+  }
+
   // Walk up from the "Reposted ... ago" leaf until an ancestor contains an
-  // actual track anchor (reuses the shared DOM layer's row matching rather
-  // than re-implementing href pattern matching).
+  // anchor whose href matches a track/playlist permalink shape - not just
+  // the reposting user's own 1-segment profile link, which sits closest to
+  // the text but never matches either regex above.
   function findPermalinkNear(leaf) {
     let el = leaf;
     for (let i = 0; i < 14 && el; i++) {
-      const anchors = window.SCSMDom.findTrackAnchors(el);
-      if (anchors.length) return anchors[0].getAttribute('href');
+      const href = findPermalinkIn(el);
+      if (href) return href;
       el = el.parentElement;
     }
     return null;
