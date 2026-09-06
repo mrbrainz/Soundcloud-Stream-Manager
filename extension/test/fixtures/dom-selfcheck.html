@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SCSM mock fixture — lib/dom.js self-check</title>
+    <style>
+      body { font-family: sans-serif; max-width: 640px; margin: 24px auto; }
+      .fixture-note { color: #888; font-size: 12px; }
+      #results { font-family: monospace; white-space: pre-wrap; }
+      .pass { color: #1a7f37; }
+      .fail { color: #cf222e; }
+      ul.soundList__list { list-style: none; padding: 0; }
+      li.soundList__item { border: 1px solid #ddd; padding: 6px; margin-bottom: 4px; }
+    </style>
+  </head>
+  <body>
+    <p class="fixture-note">
+      Exercises <code>lib/dom.js</code>'s row-shape matching and its shared
+      MutationObserver-driven scan loop. See
+      <a href="../README.md">test/README.md</a>.
+    </p>
+    <div id="results">running…</div>
+
+    <ul class="soundList__list" id="track-list">
+      <li class="soundList__item"><a class="soundTitle__title" href="/testartist/old-repost-track">Old Repost Track</a></li>
+      <li class="soundList__item"><a class="soundTitle__title" href="/testartist/recent-repost-track">Recent Repost Track</a></li>
+      <li class="soundList__item"><a class="soundTitle__title" href="/testartist/long-mix">Long Mix Session</a></li>
+    </ul>
+
+    <script src="/test/mocks/chrome-mock.js"></script>
+    <script src="/test/mocks/data.js"></script>
+    <script src="/test/mocks/sc-api-mock.js"></script>
+    <script src="/lib/settings.js"></script>
+    <script src="/lib/auth.js"></script>
+    <script src="/lib/api.js"></script>
+    <script src="/lib/dom.js"></script>
+    <script>
+      (async function () {
+        const out = document.getElementById('results');
+        const lines = [];
+        let failures = 0;
+
+        function check(label, actual, expected) {
+          const ok = JSON.stringify(actual) === JSON.stringify(expected);
+          if (!ok) failures++;
+          lines.push(
+            `${ok ? 'PASS' : 'FAIL'} ${label}` +
+              (ok ? '' : ` — expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`)
+          );
+        }
+
+        function render() {
+          out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
+          out.className = failures === 0 ? 'pass' : 'fail';
+        }
+
+        check('isRelevantFrame() in the top frame', window.SCSMDom.isRelevantFrame(), true);
+
+        // ---- static row matching ----
+        const anchors = window.SCSMDom.findTrackAnchors(document.body);
+        check('findTrackAnchors finds all 3 rows', anchors.length, 3);
+        check(
+          'permalinkPathFromHref resolves each anchor correctly',
+          anchors.map((a) => window.SCSMDom.permalinkPathFromHref(a.getAttribute('href'))),
+          ['/testartist/old-repost-track', '/testartist/recent-repost-track', '/testartist/long-mix']
+        );
+
+        // ---- shared scan loop: initial deferred full scan ----
+        const initialScans = [];
+        window.SCSMDom.onScan((dirtyNodes) => initialScans.push(dirtyNodes));
+        await new Promise((resolve) => setTimeout(resolve, 50)); // let the deferred initial rescan() fire
+        check('onScan received the deferred initial full-page scan', initialScans.length >= 1, true);
+        check('initial scan includes document.body', initialScans[0] && initialScans[0][0] === document.body, true);
+
+        // ---- shared scan loop: MutationObserver picks up a newly-added row ----
+        const mutationScans = [];
+        window.SCSMDom.onScan((dirtyNodes) => mutationScans.push(dirtyNodes));
+        const li = document.createElement('li');
+        li.className = 'soundList__item';
+        li.innerHTML = '<a class="soundTitle__title" href="/testartist/short-downloadable-track">Short Downloadable Track</a>';
+        document.getElementById('track-list').appendChild(li);
+
+        await new Promise((resolve) => setTimeout(resolve, 250)); // past the 150ms debounce
+        const foundNewAnchor = mutationScans.some((nodes) => window.SCSMDom.findTrackAnchors(nodes[0] || null).length > 0 || nodes.includes(li));
+        check('MutationObserver batch includes the newly-added row', foundNewAnchor, true);
+
+        // ---- manual rescan() ----
+        const rescanCalls = [];
+        window.SCSMDom.onScan((dirtyNodes) => rescanCalls.push(dirtyNodes));
+        window.SCSMDom.rescan();
+        check('rescan() immediately re-notifies with document.body', rescanCalls[0] && rescanCalls[0][0] === document.body, true);
+
+        render();
+        console.log('[SCSM selfcheck]', failures === 0 ? 'ALL PASSED' : failures + ' FAILED', lines);
+      })();
+    </script>
+  </body>
+</html>
