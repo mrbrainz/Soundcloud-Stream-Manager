@@ -62,6 +62,11 @@ over `http://`.)
   scenario in `mocks/data.js` (correctness, not just reachability — compare
   `mocks/sc-api-mock.js`'s own self-test, which only checks the mocked
   endpoints themselves respond).
+- **`fixtures/rowstate-selfcheck.html`** — not a page-shape fixture;
+  asserts `lib/rowState.js`'s minimize/show treatment in isolation
+  (minimize hides original content behind a wrapper and shows a label +
+  "show" link, re-minimizing updates the label instead of duplicating it,
+  clicking "show" restores the exact original children).
 - **`fixtures/popup-selfcheck.html`** — reproduces `popup/popup.html`'s
   form markup by hand (kept in sync manually — update both when the popup's
   fields change) and loads the real, unmodified `popup/popup.js` against
