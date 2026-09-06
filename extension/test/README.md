@@ -78,6 +78,12 @@ over `http://`.)
   minimizes long rows by duration alone (a short REPOST is left alone,
   proving it's not conflated with hideOldTracks), threshold raise/lower
   restores/re-minimizes live, and toggling off restores everything.
+- **`fixtures/searchlinks-selfcheck.html`** — end-to-end test of
+  `content/features/searchLinks.js` and `lib/iconRow.js`: query building
+  (title+artist, punctuation stripped), all 4 platform URLs, sharing the
+  icon row with another feature's icon without disturbing it, skipping a
+  minimized row and resuming once it's restored (exercises
+  `rowState.restore()`'s rescan-on-restore hook), and toggle-off cleanup.
 - **`fixtures/rowstate-selfcheck.html`** — not a page-shape fixture;
   asserts `lib/rowState.js`'s minimize/show treatment in isolation
   (minimize hides original content behind a wrapper and shows a label +
