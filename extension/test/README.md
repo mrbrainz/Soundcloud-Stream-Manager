@@ -84,6 +84,11 @@ over `http://`.)
   icon row with another feature's icon without disturbing it, skipping a
   minimized row and resuming once it's restored (exercises
   `rowState.restore()`'s rescan-on-restore hook), and toggle-off cleanup.
+- **`fixtures/downloadbutton-selfcheck.html`** — end-to-end test of
+  `content/features/downloadButton.js`: renders only for a
+  confirmed-downloadable track, the link carries the real `download_url`
+  and `client_id`, shares the icon row with other features, and the same
+  minimize/restore skip-and-resume behavior as the search links fixture.
 - **`fixtures/rowstate-selfcheck.html`** — not a page-shape fixture;
   asserts `lib/rowState.js`'s minimize/show treatment in isolation
   (minimize hides original content behind a wrapper and shows a label +
