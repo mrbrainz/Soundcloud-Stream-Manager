@@ -31,6 +31,14 @@
     }
   }
 
+  function getRequestHeader(init, name) {
+    if (!init || !init.headers) return null;
+    const h = init.headers;
+    if (typeof h.get === 'function') return h.get(name); // a real Headers instance
+    const key = Object.keys(h).find((k) => k.toLowerCase() === name.toLowerCase());
+    return key ? h[key] : null;
+  }
+
   function jsonResponse(body, status = 200) {
     return Promise.resolve(
       new Response(JSON.stringify(body), {
@@ -67,6 +75,21 @@
       return jsonResponse({ error: 'mock: no fixture for ' + target }, 404);
     }
 
+    // GET /tracks/{id}/download - live-verified (#38) this 401s on the
+    // real API without a real OAuth Authorization header, plain client_id
+    // is not enough. Enforced here too so a regression that drops the
+    // header from the real fetch call (lib/api.js's getDownloadRedirectUrl)
+    // fails this mock as well, not just live.
+    const downloadMatch = parsed.pathname.match(/^\/tracks\/(\d+)\/download$/);
+    if (downloadMatch) {
+      const authHeader = getRequestHeader(init, 'Authorization');
+      if (!authHeader) return jsonResponse({ error: 'mock: needs a real OAuth Authorization header' }, 401);
+      const id = Number(downloadMatch[1]);
+      const redirectUri = DATA.downloadRedirects && DATA.downloadRedirects[id];
+      if (redirectUri) return jsonResponse({ redirectUri });
+      return jsonResponse({ error: 'mock: no download redirect for track id ' + id }, 401);
+    }
+
     // GET /tracks/{id}
     const trackIdMatch = parsed.pathname.match(/^\/tracks\/(\d+)$/);
     if (trackIdMatch) {
@@ -99,6 +122,13 @@
     }
     const playlistsRes = await window.fetch('https://api-v2.soundcloud.com/users/999/playlists?client_id=x&limit=10&offset=0');
     results.push(['playlists page', playlistsRes.ok]);
+
+    for (const idStr of Object.keys(DATA.downloadRedirects || {})) {
+      const res = await window.fetch(`https://api-v2.soundcloud.com/tracks/${idStr}/download?client_id=x`, {
+        headers: { Authorization: 'OAuth mock-oauth-token' },
+      });
+      results.push([`download redirect for ${idStr}`, res.ok]);
+    }
 
     const failed = results.filter(([, ok]) => !ok);
     if (failed.length) {

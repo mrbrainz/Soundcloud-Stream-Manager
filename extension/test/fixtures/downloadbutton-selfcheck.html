@@ -74,14 +74,20 @@
         check('a non-downloadable track gets no button', buttonsIn('row-not-downloadable').length, 0);
 
         const link = buttonsIn('row-downloadable')[0];
-        const url = new URL(link.href);
         check(
-          'the link points at the track\'s download_url',
-          url.origin + url.pathname,
-          'https://api-v2.soundcloud.com/tracks/1004/download'
+          'the link is the signed redirect URL from GET /tracks/{id}/download, not a raw client_id link',
+          link.href,
+          'https://cf-media.sndcdn.com/mock-signed-download-1004'
         );
-        check('the link carries the client_id', url.searchParams.get('client_id'), 'mock-client-id-123');
         check('the link opens in a new tab', link.target, '_blank');
+
+        // ---- the download endpoint genuinely requires OAuth, not just client_id ----
+        // (live-verified #38: a plain client_id 401s on the real API)
+        const savedCookie = document.cookie;
+        document.cookie = 'oauth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        const redirectWithoutOauth = await window.SCSMApi.getDownloadRedirectUrl(1004);
+        document.cookie = savedCookie || 'oauth_token=mock-oauth-token; path=/';
+        check('getDownloadRedirectUrl returns null without a real OAuth token', redirectWithoutOauth, null);
 
         // ---- idempotency ----
         window.SCSMDom.rescan();
