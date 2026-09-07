@@ -27,6 +27,22 @@
   // "/n" prefix SoundCloud's webiIframe route adds.
   const STANDALONE_PATH_RE = /^\/n?\/([^/]+)\/(sets\/)?([^/]+)\/?$/;
 
+  // Live-verified on /feed (#50): the right-hand column (streamSidebar's
+  // "New tracks"/"Artists you should follow"/"Recently played" modules)
+  // also contains `a.soundTitle__title` anchors, so every feature was
+  // picking those up too. The main stream/search list shape differs
+  // per page (`.stream__list`, `.searchList`, ...) and even shares a
+  // `.lazyLoadingList__list` class with sidebar modules, so positively
+  // matching "the real list" isn't reliable - excluding the sidebar's own
+  // layout wrapper is. `.l-sidebar-right` consistently wraps the whole
+  // right column across page shapes that have one; pages without a
+  // sidebar (e.g. search) simply never match it.
+  const SIDEBAR_SELECTOR = '.l-sidebar-right';
+
+  function isInSidebar(el) {
+    return !!(el.closest && el.closest(SIDEBAR_SELECTOR));
+  }
+
   function isRelevantFrame() {
     return isTopFrame || STANDALONE_PATH_RE.test(location.pathname);
   }
@@ -47,9 +63,11 @@
     if (root.nodeType === Node.TEXT_NODE) root = root.parentElement;
     if (!root) return [];
     const results = [];
-    if (root.matches && root.matches('a.soundTitle__title[href]')) results.push(root);
+    if (root.matches && root.matches('a.soundTitle__title[href]') && !isInSidebar(root)) results.push(root);
     if (root.querySelectorAll) {
-      root.querySelectorAll('a.soundTitle__title[href]').forEach((el) => results.push(el));
+      root.querySelectorAll('a.soundTitle__title[href]').forEach((el) => {
+        if (!isInSidebar(el)) results.push(el);
+      });
     }
     return results;
   }
@@ -144,6 +162,7 @@
     standalonePermalinkPath,
     findTrackAnchors,
     findRowForAnchor,
+    isInSidebar,
     onScan,
     rescan,
   };
