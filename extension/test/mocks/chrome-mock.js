@@ -61,6 +61,15 @@
     },
   };
 
+  // A real chrome.runtime.getURL() returns an absolute
+  // chrome-extension://<id>/<path> URL - approximated here as a
+  // server-root-relative path (the no-cache-server's document root IS
+  // extension/, same as a real packed extension's own root), which
+  // resolves to the exact same file a real getURL() call would (#68).
+  window.chrome.runtime = window.chrome.runtime || {
+    getURL: (path) => '/' + path.replace(/^\/+/, ''),
+  };
+
   // Exposed for fixtures/manual console poking, e.g.
   // window.__scMockStorage.dump() to inspect current settings.
   window.__scMockStorage = {

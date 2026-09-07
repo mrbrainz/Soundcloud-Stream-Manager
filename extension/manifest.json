@@ -18,6 +18,12 @@
   },
   "permissions": ["storage"],
   "host_permissions": ["https://soundcloud.com/*", "https://api-v2.soundcloud.com/*"],
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/services/*.png"],
+      "matches": ["https://soundcloud.com/*"]
+    }
+  ],
   "content_scripts": [
     {
       "matches": ["https://soundcloud.com/*"],

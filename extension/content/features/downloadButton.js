@@ -28,8 +28,9 @@
       extraClass: BTN_CLASS,
       href: redirectUrl,
       title: 'Download (legacy)',
-      badgeText: '↓', // down arrow - not a platform logo, just a download glyph
+      badgeText: '↓', // fallback if the icon asset is ever missing
       badgeColor: '#64748B',
+      iconUrl: chrome.runtime.getURL('icons/services/icon-download.png'),
     });
     container.appendChild(link);
   }

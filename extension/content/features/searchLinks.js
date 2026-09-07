@@ -10,15 +10,18 @@
 
   const LINK_CLASS = 'scsm-search-link';
 
-  // badge/badgeColor are a colored-initial stand-in for each platform's
-  // logo, not a reproduction of the actual trademarked mark - see
-  // lib/iconRow.js's createIconButton. Picked to be visually distinct from
-  // each other, not matched to any platform's official brand color.
+  // iconUrl points at a real per-platform icon bundled under
+  // extension/icons/services/ (#68) - declared web-accessible in
+  // manifest.json so a content-script-injected <img> can load it via a
+  // chrome-extension:// URL. badge/badgeColor are the #40 fallback (a
+  // colored-initial stand-in, not a trademarked mark) for any platform
+  // that ever loses its icon asset - lib/iconRow.js's createIconButton
+  // uses one or the other, never both.
   const PLATFORMS = [
-    { key: 'deezer', label: 'Deezer', badge: 'D', color: '#A855F7', urlFor: (q) => 'https://www.deezer.com/search/' + encodeURIComponent(q) },
-    { key: 'appleMusic', label: 'Apple Music', badge: 'AM', color: '#FB4570', urlFor: (q) => 'https://music.apple.com/search?term=' + encodeURIComponent(q) },
-    { key: 'beatport', label: 'Beatport', badge: 'B', color: '#10B981', urlFor: (q) => 'https://www.beatport.com/search?q=' + encodeURIComponent(q) },
-    { key: 'spotify', label: 'Spotify', badge: 'S', color: '#22C55E', urlFor: (q) => 'https://open.spotify.com/search/' + encodeURIComponent(q) },
+    { key: 'deezer', label: 'Deezer', badge: 'D', color: '#A855F7', icon: 'icon-deezer.png', urlFor: (q) => 'https://www.deezer.com/search/' + encodeURIComponent(q) },
+    { key: 'appleMusic', label: 'Apple Music', badge: 'AM', color: '#FB4570', icon: 'icon-apple-music.png', urlFor: (q) => 'https://music.apple.com/search?term=' + encodeURIComponent(q) },
+    { key: 'beatport', label: 'Beatport', badge: 'B', color: '#10B981', icon: 'icon-beatport.png', urlFor: (q) => 'https://www.beatport.com/search?q=' + encodeURIComponent(q) },
+    { key: 'spotify', label: 'Spotify', badge: 'S', color: '#22C55E', icon: 'icon-spotify.png', urlFor: (q) => 'https://open.spotify.com/search/' + encodeURIComponent(q) },
   ];
 
   let enabled = false;
@@ -58,6 +61,7 @@
         title: 'Search "' + query + '" on ' + platform.label,
         badgeText: platform.badge,
         badgeColor: platform.color,
+        iconUrl: chrome.runtime.getURL('icons/services/' + platform.icon),
       });
       container.appendChild(link);
     });
