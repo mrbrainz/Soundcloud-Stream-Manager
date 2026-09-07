@@ -5,9 +5,9 @@
 // the configured threshold. Mirrors hideOldTracks.js's structure exactly;
 // see board card #11 and docs/context.md.
 //
-// Same known limitation as hideOldTracks.js: a row matching both hide
-// filters gets whichever "reason" tag was written last - see that file's
-// comment for detail. Acceptable for the MVP.
+// A row matching more than one hide filter at once (e.g. also too old, or
+// also already in a playlist) stays hidden until EVERY filter's reason has
+// cleared - see lib/rowState.js's multi-reason tracking (#64).
 (function () {
   'use strict';
 
@@ -15,13 +15,17 @@
   let enabled = false;
   let thresholdMinutes = 25;
 
-  function labelFor(track, anchor) {
-    const title = (track && track.title) || anchor.textContent.trim();
-    // Shows WHY at a glance, using the threshold as configured right now -
-    // rowState.minimize() re-runs this (and updates the visible label) any
-    // time evaluate() re-minimizes an already-minimized row, so if the
-    // threshold changes later the displayed reason stays current too.
-    return `${title} — hidden: longer than ${thresholdMinutes} minute${thresholdMinutes === 1 ? '' : 's'}`;
+  function titleFor(track, anchor) {
+    return (track && track.title) || anchor.textContent.trim();
+  }
+
+  // Just this filter's own reason phrase - lib/rowState.js combines it with
+  // any other active filter's reason into one label. Recomputed (and the
+  // visible label updated) any time evaluate() re-minimizes an
+  // already-minimized row, so if the threshold changes later the displayed
+  // reason stays current too.
+  function reasonTextFor() {
+    return `longer than ${thresholdMinutes} minute${thresholdMinutes === 1 ? '' : 's'}`;
   }
 
   async function evaluate(anchor) {
@@ -40,11 +44,12 @@
       // triggers (see the "hidden track's show link doesn't restore the
       // row" bug). Stays dismissed until the feature is toggled off/on.
       if (window.SCSMRowState.isDismissed(row, REASON)) return;
-      window.SCSMRowState.minimize(row, labelFor(track, anchor), { reason: REASON });
-    } else if (window.SCSMRowState.isMinimized(row) && row.dataset.scsmMinimizeReason === REASON) {
+      window.SCSMRowState.minimize(row, titleFor(track, anchor), { reason: REASON, reasonText: reasonTextFor() });
+    } else if (window.SCSMRowState.isMinimized(row)) {
       // The threshold was raised since this row was last evaluated and it
-      // no longer qualifies - put it back.
-      window.SCSMRowState.restore(row);
+      // no longer qualifies - drop just this filter's reason. If another
+      // filter's reason is still active, the row stays hidden under that one.
+      window.SCSMRowState.unapplyReason(row, REASON);
     }
   }
 
@@ -56,10 +61,12 @@
   }
 
   function restoreOwnRows() {
-    document.querySelectorAll(`[data-scsm-minimize-reason="${REASON}"]`).forEach((row) => window.SCSMRowState.restore(row));
+    // ~= matches one whitespace-separated token in the attribute - a row
+    // can carry more than one filter's reason key at once (#64).
+    document.querySelectorAll(`[data-scsm-reason-keys~="${REASON}"]`).forEach((row) => window.SCSMRowState.unapplyReason(row, REASON));
     // A full off/on cycle is a clean slate - a row the user dismissed
     // under the old session shouldn't stay permanently immune.
-    document.querySelectorAll(`[data-scsm-dismissed-reason="${REASON}"]`).forEach((row) => window.SCSMRowState.clearDismissed(row));
+    document.querySelectorAll(`[data-scsm-dismissed-reasons~="${REASON}"]`).forEach((row) => window.SCSMRowState.clearDismissed(row, REASON));
   }
 
   function applySetting(settings) {

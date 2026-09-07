@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SCSM mock fixture — multi-reason hide end-to-end self-check (#64)</title>
+    <style>
+      body { font-family: sans-serif; max-width: 640px; margin: 24px auto; }
+      .fixture-note { color: #888; font-size: 12px; }
+      #results { font-family: monospace; white-space: pre-wrap; }
+      .pass { color: #1a7f37; }
+      .fail { color: #cf222e; }
+      li.soundList__item { border: 1px solid #ddd; padding: 8px; margin-bottom: 6px; }
+    </style>
+  </head>
+  <body>
+    <p class="fixture-note">
+      Reproduces #64 end-to-end with two REAL feature files (not
+      <code>lib/rowState.js</code> in isolation - see
+      <code>rowstate-selfcheck.html</code> for that): a row that trips BOTH
+      <code>hideLongTracks</code> and <code>hideTracksInPlaylist</code> at
+      once, using <code>in-playlist-track</code> from
+      <code>mocks/data.js</code> (already in 2 playlists, 4:00 long) with
+      the long-tracks threshold lowered to 2 minutes so it also qualifies
+      as "too long". Before the fix, clicking "show" would only dismiss
+      ONE filter's reason, and the other filter would immediately re-hide
+      the row on the very rescan the click itself triggers. See
+      <a href="../README.md">test/README.md</a>.
+    </p>
+    <div id="results">running…</div>
+
+    <ul>
+      <li class="soundList__item" id="row-both">
+        <a class="soundTitle__title" href="/testartist/in-playlist-track">In Playlist Track</a>
+      </li>
+      <li class="soundList__item" id="row-long-only">
+        <a class="soundTitle__title" href="/testartist/long-mix">Long Mix Session</a>
+      </li>
+    </ul>
+
+    <script src="/test/mocks/chrome-mock.js"></script>
+    <script src="/test/mocks/data.js"></script>
+    <script src="/test/mocks/sc-api-mock.js"></script>
+    <script src="/content/mainWorldBridge.js"></script>
+    <script src="/lib/settings.js"></script>
+    <script src="/lib/auth.js"></script>
+    <script src="/lib/api.js"></script>
+    <script src="/lib/dom.js"></script>
+    <script src="/lib/rowState.js"></script>
+    <script src="/content/features/hideLongTracks.js"></script>
+    <script src="/content/features/playlistMembership.js"></script>
+    <script src="/content/features/hideInPlaylistTracks.js"></script>
+    <script>
+      (async function () {
+        const out = document.getElementById('results');
+        const lines = [];
+        let failures = 0;
+
+        function check(label, actual, expected) {
+          const ok = JSON.stringify(actual) === JSON.stringify(expected);
+          if (!ok) failures++;
+          lines.push(
+            `${ok ? 'PASS' : 'FAIL'} ${label}` +
+              (ok ? '' : ` — expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`)
+          );
+        }
+        function wait(ms) {
+          return new Promise((resolve) => setTimeout(resolve, ms));
+        }
+        function minimized(id) {
+          return window.SCSMRowState.isMinimized(document.getElementById(id));
+        }
+        function summaryText(id) {
+          const el = document.getElementById(id).querySelector('.scsm-row-summary-text');
+          return el ? el.textContent : null;
+        }
+
+        await wait(30);
+        check('nothing minimized before either feature is enabled', minimized('row-both'), false);
+
+        // Threshold of 2 minutes: in-playlist-track (4:00) qualifies as
+        // "too long" too, on top of already being in 2 playlists.
+        await window.SCSMSettings.set({ hideLongTracks: true, hideLongTracksMinutes: 2, hideTracksInPlaylist: true });
+        await wait(300); // both filters resolve + the playlist crawl (250ms inter-page delay)
+
+        check('the dual-condition row is minimized', minimized('row-both'), true);
+        check('a long-only row is minimized too', minimized('row-long-only'), true);
+        check(
+          'the label lists BOTH reasons, not just one overwriting the other',
+          summaryText('row-both'),
+          'In Playlist Track — hidden: longer than 2 minutes, already in a playlist'
+        );
+
+        // ---- the actual #64 regression: one "show" click must make it ACTUALLY stay shown ----
+        document.getElementById('row-both').querySelector('.scsm-row-show-link').click();
+        await wait(200); // let both filters' evaluate() re-run on the rescan the click triggers
+        check('clicking "show" once makes the row STAY visible (not flip-flop back)', minimized('row-both'), false);
+
+        // ---- rescanning again afterwards still respects the dismissal for BOTH filters ----
+        window.SCSMDom.rescan();
+        await wait(150);
+        check('a later, unrelated rescan does not re-hide the row under either reason', minimized('row-both'), false);
+
+        // ---- the unrelated long-only row is unaffected by the other row's dismissal ----
+        check('a different row hidden for only one reason is unaffected', minimized('row-long-only'), true);
+
+        // ---- toggling both filters off then back on re-hides it under both reasons again (clean slate) ----
+        await window.SCSMSettings.set({ hideLongTracks: false, hideTracksInPlaylist: false });
+        await wait(50);
+        check('toggling both filters off restores the row', minimized('row-both'), false);
+        await window.SCSMSettings.set({ hideLongTracks: true, hideTracksInPlaylist: true });
+        await wait(150);
+        check('toggling both back on re-minimizes the previously-dismissed row', minimized('row-both'), true);
+        check(
+          'the label lists both reasons again after the clean-slate re-hide',
+          summaryText('row-both'),
+          'In Playlist Track — hidden: longer than 2 minutes, already in a playlist'
+        );
+
+        out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
+        out.className = failures === 0 ? 'pass' : 'fail';
+        console.log('[SCSM selfcheck]', failures === 0 ? 'ALL PASSED' : failures + ' FAILED', lines);
+      })();
+    </script>
+  </body>
+</html>
