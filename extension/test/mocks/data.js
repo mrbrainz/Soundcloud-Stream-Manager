@@ -101,6 +101,44 @@ window.__SCSM_MOCK_DATA__ = {
       downloadable: true,
       user: { username: 'Test Artist' },
     },
+    // Downloadable, whose /download redirect HANGS FOREVER (#85's
+    // regression test). Three distinct ids (not one reused three times) -
+    // getDownloadRedirectUrl dedupes concurrent calls for the SAME track
+    // id into one shared in-flight request, so filling all 3 of
+    // lib/api.js's MAX_CONCURRENT queue slots with hanging jobs needs 3
+    // different tracks, matching how the live bug actually wedged the
+    // queue (3 different downloadable tracks each stalling their own
+    // /download call).
+    '/testartist/hanging-download-track-1': {
+      id: 1009,
+      kind: 'track',
+      title: 'Hanging Download Track 1',
+      permalink_url: 'https://soundcloud.com/testartist/hanging-download-track-1',
+      created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+      duration: 160000,
+      downloadable: true,
+      user: { username: 'Test Artist' },
+    },
+    '/testartist/hanging-download-track-2': {
+      id: 1010,
+      kind: 'track',
+      title: 'Hanging Download Track 2',
+      permalink_url: 'https://soundcloud.com/testartist/hanging-download-track-2',
+      created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+      duration: 160000,
+      downloadable: true,
+      user: { username: 'Test Artist' },
+    },
+    '/testartist/hanging-download-track-3': {
+      id: 1011,
+      kind: 'track',
+      title: 'Hanging Download Track 3',
+      permalink_url: 'https://soundcloud.com/testartist/hanging-download-track-3',
+      created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+      duration: 160000,
+      downloadable: true,
+      user: { username: 'Test Artist' },
+    },
     // A label/aggregator upload: the account is NOT the real artist. Real
     // example confirmed live (see #36): soundcloud.com/nawtyrecords posts
     // as "Nawty Records" but publisher_metadata.artist is "Neumonic".
@@ -160,5 +198,8 @@ window.__SCSM_MOCK_DATA__ = {
     // same id from the earlier button-render step in the same test.
     9999: 'https://cf-media.sndcdn.com/mock-signed-download-9999',
     1008: 'https://cf-media.sndcdn.com/mock-signed-download-1008',
+    1009: 'HANG_FOREVER',
+    1010: 'HANG_FOREVER',
+    1011: 'HANG_FOREVER',
   },
 };

@@ -86,6 +86,21 @@
       if (!authHeader) return jsonResponse({ error: 'mock: needs a real OAuth Authorization header' }, 401);
       const id = Number(downloadMatch[1]);
       const redirectUri = DATA.downloadRedirects && DATA.downloadRedirects[id];
+      // #85 regression: simulates the live-observed case of SoundCloud's
+      // API leaving a request permanently pending (no response at all,
+      // ever) - never resolves on its own, only reacts to the caller's
+      // AbortSignal, exactly like a real hung fetch() would.
+      if (redirectUri === 'HANG_FOREVER') {
+        return new Promise((resolve, reject) => {
+          const signal = init && init.signal;
+          if (!signal) return; // never settles
+          if (signal.aborted) {
+            reject(new DOMException('Aborted', 'AbortError'));
+            return;
+          }
+          signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+        });
+      }
       if (redirectUri) return jsonResponse({ redirectUri });
       return jsonResponse({ error: 'mock: no download redirect for track id ' + id }, 401);
     }
@@ -124,6 +139,10 @@
     results.push(['playlists page', playlistsRes.ok]);
 
     for (const idStr of Object.keys(DATA.downloadRedirects || {})) {
+      // HANG_FOREVER (#85) never settles without an AbortSignal - it's
+      // exercised directly by api-selfcheck.html's own regression test,
+      // not this reachability self-test.
+      if (DATA.downloadRedirects[idStr] === 'HANG_FOREVER') continue;
       const res = await window.fetch(`https://api-v2.soundcloud.com/tracks/${idStr}/download?client_id=x`, {
         headers: { Authorization: 'OAuth mock-oauth-token' },
       });
