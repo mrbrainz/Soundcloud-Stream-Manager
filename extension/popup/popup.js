@@ -67,5 +67,30 @@
     window.SCSMSettings.onChange(applyToForm);
   }
 
+  // Hovering "SCSM" shows images/fellow-kids.webp following the cursor -
+  // a pure easter egg, no settings involved. Positioned via inline
+  // top/left (not CSS :hover) so it can track mousemove, and un-hidden
+  // only for the duration of the hover.
+  function initHoverEasterEgg() {
+    const titleblock = document.getElementById('titleblock');
+    const egg = document.getElementById('hoverEasterEgg');
+    if (!titleblock || !egg) return;
+
+    function moveTo(e) {
+      egg.style.left = e.clientX + 12 + 'px';
+      egg.style.top = e.clientY + 12 + 'px';
+    }
+
+    titleblock.addEventListener('mouseenter', (e) => {
+      egg.hidden = false;
+      moveTo(e);
+    });
+    titleblock.addEventListener('mousemove', moveTo);
+    titleblock.addEventListener('mouseleave', () => {
+      egg.hidden = true;
+    });
+  }
+
   init();
+  initHoverEasterEgg();
 })();
