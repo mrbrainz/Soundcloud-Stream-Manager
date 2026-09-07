@@ -14,13 +14,15 @@
   </head>
   <body>
     <p class="fixture-note">
-      Exercises #65 end-to-end with a REAL feature file
+      Exercises #65/#79 end-to-end with a REAL feature file
       (<code>hideOldTracks.js</code>): confirms a feature stays active on
       an enabled page type, goes inert on a disabled one (even while its
-      own setting is on), and live-reacts to
-      <code>enabledPageTypes</code> changing - without needing a page
-      reload, via <code>history.pushState</code> to simulate navigating
-      between page types. See <a href="../README.md">test/README.md</a>.
+      own setting is on), live-reacts to <code>enabledPageTypes</code>
+      changing, AND - the actual #79 bug - live-reacts to an in-app
+      SPA navigation (<code>history.pushState</code>, exactly how
+      SoundCloud's own router navigates, e.g. clicking your own avatar)
+      WITHOUT any settings change at all. See
+      <a href="../README.md">test/README.md</a>.
     </p>
     <div id="results">running…</div>
 
@@ -93,6 +95,32 @@
         await window.SCSMSettings.set({ enabledPageTypes: ['profile'] });
         await wait(100);
         check('excluding the current page type restores the row', minimized(), false);
+
+        // ---- #79: the actual reported bug - an in-app SPA navigation, with NO settings change at all ----
+        // Reproduces the exact repro steps: feed-only enabled, hide a
+        // matching row there, then navigate (via pushState, exactly how
+        // SoundCloud's own router does it - e.g. clicking your own avatar
+        // to your profile) to a page type that's NOT enabled. Before the
+        // fix, nothing told the feature its `enabled` flag had gone
+        // stale, so the row stayed hidden until a real page reload.
+        history.pushState({}, '', '/feed');
+        await window.SCSMSettings.set({ enabledPageTypes: ['feed'], hideOldTracks: true });
+        await wait(150);
+        check('setup: on a "feed" page with only "feed" enabled, the row is hidden', minimized(), true);
+
+        history.pushState({}, '', '/someartist'); // the SPA nav itself - no settings.set() call at all
+        await wait(150); // let mainWorldBridge.js's patched pushState's scsm:navigation event + dom.js's rescan/debounce settle
+        check('pageType() reflects the new URL after the SPA nav', window.SCSMDom.pageType(), 'profile');
+        check(
+          'the row is restored after an in-app SPA navigation to a disabled page type - no reload, no settings change',
+          minimized(),
+          false
+        );
+
+        // ---- navigating BACK to an enabled page type re-hides it live too ----
+        history.pushState({}, '', '/feed');
+        await wait(150);
+        check('navigating back to an enabled page type re-hides the row', minimized(), true);
 
         out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
         out.className = failures === 0 ? 'pass' : 'fail';

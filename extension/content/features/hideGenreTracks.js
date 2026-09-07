@@ -115,5 +115,6 @@
     window.SCSMDom.onScan(onDirty);
     window.SCSMSettings.get().then(applySetting);
     window.SCSMSettings.onChange(applySetting);
+    window.SCSMDom.onPageTypeChange(() => window.SCSMSettings.get().then(applySetting));
   }
 })();

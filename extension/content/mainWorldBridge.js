@@ -138,4 +138,48 @@
   }
 
   patchPlaylistXHR();
+
+  // ---- SPA navigation sync (#79, follow-up to #65) ----
+  // SoundCloud is a single-page app - clicking an in-app link (e.g. your
+  // own avatar to your profile) navigates via history.pushState(), not a
+  // real page load. Content scripts only run once per real load, so
+  // nothing previously told any feature its `enabled` flag (computed by
+  // applySetting() against #65's page-type gate) had gone stale for the
+  // new URL - live-verified (#79): with only "feed" enabled, hide-filters
+  // stayed active after navigating feed -> profile via an avatar click,
+  // and only a real reload (which re-injects the content scripts fresh)
+  // fixed it.
+  //
+  // pushState()/replaceState() are page-API patches, same rule as the
+  // playlist XHR patch above: must happen here, in the MAIN world, since
+  // SoundCloud's own router calls the MAIN world's History object, not
+  // whatever the isolated world's content script would patch. Bridges via
+  // a CustomEvent the same way - lib/dom.js (isolated world) listens for
+  // it and re-notifies every feature to re-fetch settings and re-run
+  // applySetting() against the new page.
+  function publishNavigation() {
+    document.dispatchEvent(new CustomEvent('scsm:navigation'));
+  }
+
+  function patchHistoryNavigation() {
+    const origPushState = history.pushState;
+    const origReplaceState = history.replaceState;
+
+    history.pushState = function (...args) {
+      const result = origPushState.apply(this, args);
+      publishNavigation();
+      return result;
+    };
+    history.replaceState = function (...args) {
+      const result = origReplaceState.apply(this, args);
+      publishNavigation();
+      return result;
+    };
+
+    // Covers browser back/forward too - those don't go through
+    // pushState/replaceState at all, but DO fire the native popstate event.
+    window.addEventListener('popstate', publishNavigation);
+  }
+
+  patchHistoryNavigation();
 })();

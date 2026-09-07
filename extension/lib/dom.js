@@ -223,6 +223,38 @@
     return enabled.includes(type);
   }
 
+  // ---- SPA navigation (#79, follow-up to #65) ----
+  // SoundCloud navigates in-app (e.g. clicking your own avatar to your
+  // profile) via history.pushState(), not a real page load - content
+  // scripts only run once per real load, so nothing previously told any
+  // feature its `enabled` flag (computed against pageType() above) had
+  // gone stale for the new URL. content/mainWorldBridge.js patches
+  // pushState/replaceState/popstate in the MAIN world (a page-API patch,
+  // same rule as the playlist XHR patch there) and publishes a
+  // 'scsm:navigation' CustomEvent on document - listened for here so
+  // every feature can subscribe through ONE place instead of each
+  // touching the DOM event directly.
+  const pageChangeCallbacks = [];
+  function onPageTypeChange(callback) {
+    pageChangeCallbacks.push(callback);
+  }
+
+  if (isRelevantFrame()) {
+    document.addEventListener('scsm:navigation', () => {
+      pageChangeCallbacks.forEach((cb) => {
+        try {
+          cb();
+        } catch (e) {
+          console.error('[SCSM dom] onPageTypeChange callback failed', e);
+        }
+      });
+      // The whole page's content swaps out on an SPA navigation - a fresh
+      // rescan picks it up immediately rather than waiting for individual
+      // mutations to trickle through the debounce.
+      rescan();
+    });
+  }
+
   window.SCSMDom = {
     isTopFrame,
     isRelevantFrame,
@@ -233,6 +265,7 @@
     isInSidebar,
     pageType,
     isPageTypeEnabled,
+    onPageTypeChange,
     onScan,
     rescan,
   };
