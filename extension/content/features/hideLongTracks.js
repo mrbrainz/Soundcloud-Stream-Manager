@@ -16,7 +16,12 @@
   let thresholdMinutes = 25;
 
   function labelFor(track, anchor) {
-    return (track && track.title) || anchor.textContent.trim();
+    const title = (track && track.title) || anchor.textContent.trim();
+    // Shows WHY at a glance, using the threshold as configured right now -
+    // rowState.minimize() re-runs this (and updates the visible label) any
+    // time evaluate() re-minimizes an already-minimized row, so if the
+    // threshold changes later the displayed reason stays current too.
+    return `${title} — hidden: longer than ${thresholdMinutes} minute${thresholdMinutes === 1 ? '' : 's'}`;
   }
 
   async function evaluate(anchor) {

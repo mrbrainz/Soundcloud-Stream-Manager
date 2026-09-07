@@ -80,9 +80,9 @@
         check('a short track is left alone', minimized('row-short'), false);
         check('a short REPOST is left alone too (duration only, not repost status)', minimized('row-old-repost'), false);
         check(
-          'the minimized row shows the track title as its label',
+          'the minimized row label shows the title AND why it was hidden, with the current threshold',
           document.getElementById('row-long-mix').querySelector('.scsm-row-summary-text').textContent,
-          'Long Mix Session'
+          'Long Mix Session — hidden: longer than 25 minutes'
         );
 
         // ---- raising the threshold above 32 minutes restores it ----
@@ -93,6 +93,11 @@
         // ---- lowering the threshold re-hides it ----
         await window.SCSMSettings.set({ hideLongTracksMinutes: 25 });
         await wait(100);
+        check(
+          'the reason label reflects the threshold at re-minimize time',
+          document.getElementById('row-long-mix').querySelector('.scsm-row-summary-text').textContent,
+          'Long Mix Session — hidden: longer than 25 minutes'
+        );
         check('lowering the threshold back re-minimizes the row', minimized('row-long-mix'), true);
 
         // ---- the "show" link restores a row even while the feature stays on ----
