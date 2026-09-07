@@ -15,13 +15,16 @@
   <body>
     <p class="fixture-note">
       Exercises "add to hidden genres" (#54) end-to-end: confirming
-      <code>content/features/hoverAddGenre.js</code> attaches a "+" button
-      next to a live-verified <code>a.soundTitle__tag</code> genre pill,
-      that clicking it writes to the SAME <code>hiddenGenres</code> setting
-      #53's popup free-text input manages, that it's idempotent/
-      case-insensitive, that it reflects an externally-added genre as
-      already-added ("✓"), and that it skips a tag inside the /feed
-      sidebar (#50). See <a href="../README.md">test/README.md</a>.
+      <code>content/features/hoverAddGenre.js</code> attaches a button next
+      to a live-verified <code>a.soundTitle__tag</code> genre pill (a
+      crossed-eye icon by default, a checkmark once hidden, swapping to an
+      open eye on hover of the button itself), that clicking it writes to
+      the SAME <code>hiddenGenres</code> setting #53's popup free-text
+      input manages, that clicking it AGAIN once already hidden REMOVES it
+      (not a no-op), that it's case-insensitive, that it reflects an
+      externally-added/removed genre without a rescan, and that it skips a
+      tag inside the /feed sidebar (#50). See
+      <a href="../README.md">test/README.md</a>.
     </p>
     <div id="results">running…</div>
 
@@ -77,10 +80,17 @@
         window.SCSMDom.rescan();
         await wait(100);
 
+        function iconVisible(btn, iconClass) {
+          const el = btn.querySelector('.' + iconClass);
+          return !!el && getComputedStyle(el).display !== 'none';
+        }
+
         const tag = document.querySelector('#row-a .soundTitle__tag');
         const btn = tag.nextElementSibling;
-        check('a "+" button is inserted right after the tag', btn && btn.classList.contains('scsm-genre-add-btn'), true);
-        check('the button starts in the "not added" state', btn.textContent, '+');
+        check('a button is inserted right after the tag', btn && btn.classList.contains('scsm-genre-add-btn'), true);
+        check('the button starts in the "not added" state (no --added class)', btn.classList.contains('scsm-genre-add-btn--added'), false);
+        check('the crossed-eye icon shows by default (not yet hidden)', iconVisible(btn, 'scsm-genre-icon-hide'), true);
+        check('the checkmark icon is hidden while not yet added', iconVisible(btn, 'scsm-genre-icon-check'), false);
 
         check('the sidebar tag gets NO button (#50 exclusion)', document.querySelector('#sidebar .soundTitle__tag').nextElementSibling, null);
 
@@ -89,23 +99,34 @@
         await wait(30);
         const afterClick = await window.SCSMSettings.get();
         check('clicking the button adds the tag\'s text to hiddenGenres', afterClick.hiddenGenres, ['Future Garage']);
-        check('the button flips to the "added" state', btn.textContent, '✓');
         check('the button gets the "added" CSS class', btn.classList.contains('scsm-genre-add-btn--added'), true);
+        check('the checkmark icon shows once added (not hovering)', iconVisible(btn, 'scsm-genre-icon-check'), true);
+        check('the crossed-eye icon is hidden once added', iconVisible(btn, 'scsm-genre-icon-hide'), false);
+        // jsdom-free CSS :hover can't be simulated by dispatching a
+        // 'mouseenter' event (no synthetic event forces the UA's :hover
+        // pseudo-class) - this checks the STYLE RULE exists and targets
+        // the right icon instead, which is what actually drives the swap.
+        const eyeIconOnHoverRule = [...document.styleSheets]
+          .flatMap((s) => { try { return [...s.cssRules]; } catch (e) { return []; } })
+          .find((r) => r.selectorText === '.scsm-genre-add-btn.scsm-genre-add-btn--added:hover .scsm-genre-icon-eye');
+        check('a CSS rule swaps in the open-eye icon on hover of an already-added button', !!eyeIconOnHoverRule, true);
+        check('that rule makes the eye icon visible (not the checkmark) on hover', eyeIconOnHoverRule && eyeIconOnHoverRule.style.display, 'block');
 
-        // ---- clicking again is a harmless no-op (idempotent) ----
+        // ---- clicking AGAIN once already hidden REMOVES it (not a no-op) ----
         btn.click();
         await wait(30);
         const afterSecondClick = await window.SCSMSettings.get();
-        check('clicking an already-added genre again does not duplicate it', afterSecondClick.hiddenGenres, ['Future Garage']);
+        check('clicking an already-hidden genre\'s button again removes it', afterSecondClick.hiddenGenres, []);
+        check('the button reverts to the "not added" state', btn.classList.contains('scsm-genre-add-btn--added'), false);
 
         // ---- an externally-added genre (e.g. via the popup) is reflected without needing a rescan ----
-        await window.SCSMSettings.set({ hiddenGenres: [] });
-        await wait(30);
-        check('the button reverts to "+" once the genre is removed elsewhere', btn.textContent, '+');
-
         await window.SCSMSettings.set({ hiddenGenres: ['future garage'] }); // different case, same genre
         await wait(30);
-        check('a case-insensitive match elsewhere still flips the button to "added"', btn.textContent, '✓');
+        check('a case-insensitive match elsewhere still flips the button to "added"', btn.classList.contains('scsm-genre-add-btn--added'), true);
+
+        await window.SCSMSettings.set({ hiddenGenres: [] });
+        await wait(30);
+        check('the button reverts once the genre is removed elsewhere too', btn.classList.contains('scsm-genre-add-btn--added'), false);
 
         // ---- idempotency of the button itself: rescanning doesn't add a second one ----
         window.SCSMDom.rescan();
