@@ -8,6 +8,7 @@
     'showPlaylistMembership',
     'hideOldTracks',
     'hideLongTracks',
+    'hideTracksInPlaylist',
     'showSearchLinks',
     'showDownloadButton',
   ];

@@ -14,7 +14,7 @@
   const PAGE_DELAY_MS = 250; // be polite between pagination requests, matching the reference script
 
   let enabled = false;
-  let crawledOnce = false;
+  let crawlPromise = null;
   let xhrPatched = false;
 
   // Local bookkeeping of playlist -> track id membership, used only to
@@ -119,7 +119,11 @@
     for (const trackId of changedTrackIds) {
       await window.SCSMApi.setPlaylistsForTrackId(trackId, membershipFor(trackId));
     }
-    if (enabled) window.SCSMDom.rescan();
+    // Not gated on this feature's own `enabled` (the display-badge toggle)
+    // - hideInPlaylistTracks.js also needs a rescan on live membership
+    // changes, and rescan() is cheap/no-op for any feature whose own
+    // `enabled` flag is off.
+    window.SCSMDom.rescan();
   }
 
   async function removePlaylistFromIndex(playlistId) {
@@ -129,7 +133,7 @@
     for (const trackId of prev.trackIds) {
       await window.SCSMApi.setPlaylistsForTrackId(trackId, membershipFor(trackId));
     }
-    if (enabled) window.SCSMDom.rescan();
+    window.SCSMDom.rescan();
   }
 
   function patchXHR() {
@@ -271,6 +275,26 @@
     document.querySelectorAll('.' + BADGE_CLASS).forEach((el) => el.remove());
   }
 
+  // The XHR patch and the crawl are both side effects nobody should pay for
+  // until something actually needs the membership data - install/run them
+  // lazily, once. Exposed via window.SCSMPlaylistMembership (below) so
+  // hideInPlaylistTracks.js can trigger the same crawl independently of
+  // this feature's own showPlaylistMembership (badge display) toggle - see
+  // #52: the underlying data is a shared resource, and needing it
+  // shouldn't require turning the badge display on too. Concurrent callers
+  // (both features enabling around the same time) share the one in-flight
+  // crawl via crawlPromise instead of double-crawling.
+  async function ensureCrawled() {
+    if (!xhrPatched) {
+      patchXHR();
+      xhrPatched = true;
+    }
+    if (!crawlPromise) {
+      crawlPromise = crawlPlaylists();
+    }
+    await crawlPromise;
+  }
+
   async function applySetting(settings) {
     const shouldEnable = !!settings.showPlaylistMembership;
     if (shouldEnable === enabled) return;
@@ -281,20 +305,12 @@
       return;
     }
 
-    // The XHR patch and the crawl are both side effects a user who's never
-    // turned this on shouldn't pay for - install/run them lazily, once,
-    // the first time the feature is actually enabled.
-    if (!xhrPatched) {
-      patchXHR();
-      xhrPatched = true;
-    }
-    if (!crawledOnce) {
-      crawledOnce = true;
-      await crawlPlaylists();
-    }
+    await ensureCrawled();
     window.SCSMDom.rescan();
     annotateStandalonePage();
   }
+
+  window.SCSMPlaylistMembership = { ensureCrawled };
 
   if (window.SCSMDom.isRelevantFrame()) {
     window.SCSMDom.onScan(onDirty);
