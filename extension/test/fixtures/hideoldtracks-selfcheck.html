@@ -79,9 +79,9 @@
         check('an old ORIGINAL upload is minimized too (age applies uniformly, not just to reposts)', minimized('row-old-original'), true);
         check('a recent repost is left alone', minimized('row-recent-repost'), false);
         check(
-          'the minimized row shows the track title as its label',
+          'the minimized row label shows the title AND why it was hidden, with the current threshold',
           document.getElementById('row-old-repost').querySelector('.scsm-row-summary-text').textContent,
-          'Old Repost Track'
+          'Old Repost Track — hidden: older than 30 days'
         );
 
         // ---- raising the threshold above in-playlist-track's 40-day age restores it ----
@@ -89,6 +89,11 @@
         await wait(100);
         check('raising the threshold above a row\'s age restores it', minimized('row-old-original'), false);
         check('a still-older row stays minimized after raising the threshold', minimized('row-old-repost'), true);
+        check(
+          'the reason label updates to reflect the new threshold on an already-minimized row',
+          document.getElementById('row-old-repost').querySelector('.scsm-row-summary-text').textContent,
+          'Old Repost Track — hidden: older than 60 days'
+        );
 
         // ---- lowering the threshold re-hides it ----
         await window.SCSMSettings.set({ hideOldTracksDays: 30 });
