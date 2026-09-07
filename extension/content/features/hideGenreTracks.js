@@ -85,6 +85,21 @@
 
     const justEnabled = !enabled;
     enabled = true;
+
+    // The hidden-genre LIST changing (as opposed to a numeric threshold
+    // nudging up or down) is a much more deliberate "start over" action -
+    // most visibly via #54's hover button, which lets a genre be removed
+    // and re-added within seconds. Without this, re-adding a genre a row
+    // was PREVIOUSLY dismissed under (via that row's own "show" link,
+    // while the genre was still on the list at the time) would silently
+    // stay immune, since dismissal otherwise only clears on a full
+    // enable/disable cycle - clearing it here instead means toggling a
+    // genre off and back on always re-hides matching rows right away, no
+    // stale per-row exception surviving the round trip.
+    if (genresChanged) {
+      document.querySelectorAll(`[data-scsm-dismissed-reasons~="${REASON}"]`).forEach((row) => window.SCSMRowState.clearDismissed(row, REASON));
+    }
+
     // A full rescan is needed both when freshly turned on (process
     // everything already on the page) and when only the genre list changed
     // while already on (previously-hidden rows may no longer match, or a

@@ -49,10 +49,36 @@
         check('getOAuthToken()', window.SCSMAuth.getOAuthToken(), 'mock-oauth-token');
         check('authHeaders()', window.SCSMAuth.authHeaders(), { Authorization: 'OAuth mock-oauth-token' });
 
+        // ---- cache versioning (#54 follow-up): a stale entry left over from
+        // BEFORE storeTrack()'s shape gained `genre` (#53) must not be
+        // returned as-is - lib/api.js bumped its storage key (v1 -> v2)
+        // specifically so every such entry gets a full, clean invalidation
+        // instead of permanently missing genre until its 30-day TTL
+        // happens to expire. Seed a stale v1-shaped entry (no genre field,
+        // a fresh fetchedAt so it wouldn't even be TTL-expired) BEFORE
+        // old-repost-track is resolved by anything else in this file.
+        await new Promise((resolve) => {
+          chrome.storage.local.set(
+            {
+              scsm_metadata_cache_v1: {
+                cache: {
+                  '/testartist/old-repost-track': {
+                    data: { id: 1001, title: 'Old Repost Track', permalinkPath: '/testartist/old-repost-track' }, // no `genre` - the pre-#53 shape
+                    fetchedAt: Date.now(),
+                  },
+                },
+                idIndex: { 1001: '/testartist/old-repost-track' },
+              },
+            },
+            resolve
+          );
+        });
+
         // ---- api.js: resolveByPermalinkPath ----
         const longMix = await window.SCSMApi.resolveByPermalinkPath('/testartist/long-mix');
         check('long-mix duration', longMix && longMix.duration, 32 * 60 * 1000);
         check('long-mix downloadable', longMix && longMix.downloadable, false);
+        check('long-mix genre is captured in the normalized shape (#53)', longMix && longMix.genre, 'Techno');
 
         const dl = await window.SCSMApi.resolveByPermalinkPath('/testartist/short-downloadable-track');
         check('short-downloadable-track downloadable', dl && dl.downloadable, true);
@@ -72,6 +98,17 @@
         // ---- api.js: getTrackById ----
         const byId = await window.SCSMApi.getTrackById(1001);
         check('getTrackById(1001) permalinkPath', byId && byId.permalinkPath, '/testartist/old-repost-track');
+        check(
+          'a track cached under the OLD (pre-genre) storage key is fetched fresh, not returned stale (#54 follow-up)',
+          byId && byId.genre,
+          'Trap'
+        );
+        const staleV1Entry = await new Promise((resolve) => chrome.storage.local.get('scsm_metadata_cache_v1', (r) => resolve(r.scsm_metadata_cache_v1)));
+        check(
+          'the stale v1 entry itself is left untouched (a clean key bump, not an in-place migration)',
+          staleV1Entry && staleV1Entry.cache['/testartist/old-repost-track'].data.genre,
+          undefined
+        );
 
         // ---- caching: resolving twice should hit the cache, not the network, the second time ----
         let fetchCount = 0;

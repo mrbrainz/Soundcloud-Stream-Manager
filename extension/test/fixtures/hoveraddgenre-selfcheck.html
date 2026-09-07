@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SCSM mock fixture — hover-add-genre feature self-check</title>
+    <style>
+      body { font-family: sans-serif; max-width: 640px; margin: 24px auto; }
+      .fixture-note { color: #888; font-size: 12px; }
+      #results { font-family: monospace; white-space: pre-wrap; }
+      .pass { color: #1a7f37; }
+      .fail { color: #cf222e; }
+      li.soundList__item { border: 1px solid #ddd; padding: 8px; margin-bottom: 6px; }
+    </style>
+  </head>
+  <body>
+    <p class="fixture-note">
+      Exercises "add to hidden genres" (#54) end-to-end: confirming
+      <code>content/features/hoverAddGenre.js</code> attaches a button next
+      to a live-verified <code>a.soundTitle__tag</code> genre pill (a
+      crossed-eye icon by default, a checkmark once hidden, swapping to an
+      open eye on hover of the button itself), that clicking it writes to
+      the SAME <code>hiddenGenres</code> setting #53's popup free-text
+      input manages, that clicking it AGAIN once already hidden REMOVES it
+      (not a no-op), that it's case-insensitive, that it reflects an
+      externally-added/removed genre without a rescan, and that it skips a
+      tag inside the /feed sidebar (#50). See
+      <a href="../README.md">test/README.md</a>.
+    </p>
+    <div id="results">running…</div>
+
+    <ul>
+      <li class="soundList__item" id="row-a">
+        <a class="soundTitle__title" href="/testartist/track-a">Track A</a>
+        <div class="soundTitle__tagContainer">
+          <a class="soundTitle__tag" href="/tags/future%20garage"><span class="sc-tagContent">Future Garage</span></a>
+        </div>
+      </li>
+    </ul>
+
+    <!-- Live-verified (#50): the /feed sidebar can carry the same tag
+         markup - it must never get the hover-add button either. -->
+    <div class="l-sidebar-right" id="sidebar">
+      <div class="soundTitle__tagContainer">
+        <a class="soundTitle__tag" href="/tags/techno"><span class="sc-tagContent">Techno</span></a>
+      </div>
+    </div>
+
+    <script src="/test/mocks/chrome-mock.js"></script>
+    <script src="/lib/settings.js"></script>
+    <script src="/lib/dom.js"></script>
+    <script src="/content/features/hoverAddGenre.js"></script>
+    <script>
+      (async function () {
+        const out = document.getElementById('results');
+        const lines = [];
+        let failures = 0;
+
+        function check(label, actual, expected) {
+          const ok = JSON.stringify(actual) === JSON.stringify(expected);
+          if (!ok) failures++;
+          lines.push(
+            `${ok ? 'PASS' : 'FAIL'} ${label}` +
+              (ok ? '' : ` — expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`)
+          );
+        }
+        function wait(ms) {
+          return new Promise((resolve) => setTimeout(resolve, ms));
+        }
+
+        await wait(100);
+        // Unlike the toggle-gated hide filters (whose applySetting() fires
+        // its own rescan() the moment their setting is first read), this
+        // feature has no enable toggle - it depends entirely on
+        // lib/dom.js's deferred initial rescan(). A dev-server fetch-timing
+        // race in this sandboxed test browser (unrelated to any of this
+        // feature's own code - reproduces identically via a plain
+        // dom-selfcheck.html run against a clean master checkout) can
+        // occasionally beat that deferred scan to the punch, so force one
+        // explicitly rather than depending on timing alone.
+        window.SCSMDom.rescan();
+        await wait(100);
+
+        function iconVisible(btn, iconClass) {
+          const el = btn.querySelector('.' + iconClass);
+          return !!el && getComputedStyle(el).display !== 'none';
+        }
+
+        const tag = document.querySelector('#row-a .soundTitle__tag');
+        const btn = tag.nextElementSibling;
+        check('a button is inserted right after the tag', btn && btn.classList.contains('scsm-genre-add-btn'), true);
+        check('the button starts in the "not added" state (no --added class)', btn.classList.contains('scsm-genre-add-btn--added'), false);
+        check('the crossed-eye icon shows by default (not yet hidden)', iconVisible(btn, 'scsm-genre-icon-hide'), true);
+        check('the checkmark icon is hidden while not yet added', iconVisible(btn, 'scsm-genre-icon-check'), false);
+
+        check('the sidebar tag gets NO button (#50 exclusion)', document.querySelector('#sidebar .soundTitle__tag').nextElementSibling, null);
+
+        // ---- clicking the button adds the genre to the shared setting ----
+        // A real mouse click gives the clicked <button> browser focus (a
+        // script-triggered .click() alone does not, so focus it first to
+        // reproduce that) - the CSS shows the button while :focus for
+        // keyboard users, so without an explicit blur() after handling the
+        // click it would stay stuck visible (opacity 1) instead of only
+        // showing on an actual hover.
+        btn.focus();
+        btn.click();
+        await wait(30);
+        const afterClick = await window.SCSMSettings.get();
+        check('clicking the button adds the tag\'s text to hiddenGenres', afterClick.hiddenGenres, ['Future Garage']);
+        check('the button gets the "added" CSS class', btn.classList.contains('scsm-genre-add-btn--added'), true);
+        check('the button blurs itself after a click, so it does not stay stuck visible via :focus', document.activeElement === btn, false);
+        check('the checkmark icon shows once added (not hovering)', iconVisible(btn, 'scsm-genre-icon-check'), true);
+        check('the crossed-eye icon is hidden once added', iconVisible(btn, 'scsm-genre-icon-hide'), false);
+        // jsdom-free CSS :hover can't be simulated by dispatching a
+        // 'mouseenter' event (no synthetic event forces the UA's :hover
+        // pseudo-class) - this checks the STYLE RULE exists and targets
+        // the right icon instead, which is what actually drives the swap.
+        const eyeIconOnHoverRule = [...document.styleSheets]
+          .flatMap((s) => { try { return [...s.cssRules]; } catch (e) { return []; } })
+          .find((r) => r.selectorText === '.scsm-genre-add-btn.scsm-genre-add-btn--added:hover .scsm-genre-icon-eye');
+        check('a CSS rule swaps in the open-eye icon on hover of an already-added button', !!eyeIconOnHoverRule, true);
+        check('that rule makes the eye icon visible (not the checkmark) on hover', eyeIconOnHoverRule && eyeIconOnHoverRule.style.display, 'block');
+
+        // ---- clicking AGAIN once already hidden REMOVES it (not a no-op) ----
+        btn.click();
+        await wait(30);
+        const afterSecondClick = await window.SCSMSettings.get();
+        check('clicking an already-hidden genre\'s button again removes it', afterSecondClick.hiddenGenres, []);
+        check('the button reverts to the "not added" state', btn.classList.contains('scsm-genre-add-btn--added'), false);
+
+        // ---- an externally-added genre (e.g. via the popup) is reflected without needing a rescan ----
+        await window.SCSMSettings.set({ hiddenGenres: ['future garage'] }); // different case, same genre
+        await wait(30);
+        check('a case-insensitive match elsewhere still flips the button to "added"', btn.classList.contains('scsm-genre-add-btn--added'), true);
+
+        await window.SCSMSettings.set({ hiddenGenres: [] });
+        await wait(30);
+        check('the button reverts once the genre is removed elsewhere too', btn.classList.contains('scsm-genre-add-btn--added'), false);
+
+        // ---- idempotency of the button itself: rescanning doesn't add a second one ----
+        window.SCSMDom.rescan();
+        await wait(50);
+        check('rescanning does not insert a second button', tag.parentElement.querySelectorAll('.scsm-genre-add-btn').length, 1);
+
+        out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
+        out.className = failures === 0 ? 'pass' : 'fail';
+        console.log('[SCSM selfcheck]', failures === 0 ? 'ALL PASSED' : failures + ' FAILED', lines);
+      })();
+    </script>
+  </body>
+</html>
