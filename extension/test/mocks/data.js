@@ -87,6 +87,20 @@ window.__SCSM_MOCK_DATA__ = {
       downloadable: false,
       user: { username: 'Test Artist' },
     },
+    // Downloadable, but otherwise untouched by any OTHER fixture/test in
+    // this same file - #83's regression test needs a track that's
+    // genuinely never been resolved yet, so lib/api.js's cache can't
+    // short-circuit past the client_id-not-ready-yet race it's reproducing.
+    '/testartist/late-client-id-track': {
+      id: 1008,
+      kind: 'track',
+      title: 'Late Client Id Track',
+      permalink_url: 'https://soundcloud.com/testartist/late-client-id-track',
+      created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+      duration: 150000,
+      downloadable: true,
+      user: { username: 'Test Artist' },
+    },
     // A label/aggregator upload: the account is NOT the real artist. Real
     // example confirmed live (see #36): soundcloud.com/nawtyrecords posts
     // as "Nawty Records" but publisher_metadata.artist is "Neumonic".
@@ -145,5 +159,6 @@ window.__SCSM_MOCK_DATA__ = {
     // raced against lib/api.js's own dedupe/inflight tracking for that
     // same id from the earlier button-render step in the same test.
     9999: 'https://cf-media.sndcdn.com/mock-signed-download-9999',
+    1008: 'https://cf-media.sndcdn.com/mock-signed-download-1008',
   },
 };

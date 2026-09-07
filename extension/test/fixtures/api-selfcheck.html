@@ -139,6 +139,25 @@
         const resolved = await window.SCSMApi.resolveByPermalinkPath('/testartist/recent-repost-track');
         check('resolving picks up the pending playlists', resolved.playlists, [{ id: 5002, title: 'Techno 2026' }]);
 
+        // ---- #83: a resolve started before client_id is ready WAITS for it, instead of failing permanently ----
+        // Reproduces the actual live bug: content/mainWorldBridge.js
+        // bridges client_id from window.__sc_hydration asynchronously (it
+        // polls up to 30x100ms), and a feature's very first rescan() at
+        // document_idle can race ahead of that on a slow/cold page load.
+        // Before this fix, resolveByPermalinkPath() checked getClientId()
+        // once, synchronously, and gave up for good if it wasn't there yet
+        // - downloadButton.js (which renders NOTHING unless its resolve
+        // succeeds) could end up showing no button at all until some later
+        // event re-triggered a resolve, matching the reported "needs a
+        // toggle off/on to appear."
+        const originalClientId = document.documentElement.dataset.scsmClientId;
+        delete document.documentElement.dataset.scsmClientId;
+        const genreTrackPromise = window.SCSMApi.resolveByPermalinkPath('/testartist/genre-track');
+        await new Promise((resolve) => setTimeout(resolve, 250)); // well past one 100ms poll tick, well short of the 20-tick ceiling
+        document.documentElement.dataset.scsmClientId = originalClientId; // simulates mainWorldBridge.js finally publishing it
+        const genreTrack = await genreTrackPromise;
+        check('a resolve started with no client_id yet still succeeds once one appears, instead of returning null', genreTrack && genreTrack.id, 1007);
+
         out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
         out.className = failures === 0 ? 'pass' : 'fail';
         console.log('[SCSM selfcheck]', failures === 0 ? 'ALL PASSED' : failures + ' FAILED', lines);

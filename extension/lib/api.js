@@ -173,13 +173,39 @@
     return p;
   }
 
+  // content/mainWorldBridge.js bridges client_id from the page's own
+  // window.__sc_hydration asynchronously (it may not be set yet at
+  // document_start, so that file polls up to 30x100ms) - lib/auth.js's
+  // getClientId() just reads whatever's on the DOM right now, synchronously,
+  // with no memory of "it's not there YET" vs "it's never coming." Every
+  // feature's very first rescan() (triggered as soon as its own setting is
+  // read, at document_idle - which can still race ahead of that bridge on a
+  // slow/cold page load) used to hit this and simply give up for that
+  // resolve attempt, with nothing ever retrying it: a feature relying on a
+  // one-shot resolveByPermalinkPath()/getTrackById() succeeding to render
+  // anything at all (e.g. downloadButton.js's confirmed-downloadable check)
+  // could end up rendering NOTHING on initial load, only recovering once
+  // some later event (a toggle off/on, another rescan) happened to fire
+  // after the bridge had caught up - live-verified as the actual cause of
+  // "the download button needs a toggle off/on to appear" (#83). Wait for
+  // it here, once, shared by every caller below, instead of each one
+  // re-implementing its own "maybe try again later."
+  async function waitForClientId() {
+    for (let i = 0; i < 20; i++) {
+      const id = window.SCSMAuth.getClientId();
+      if (id) return id;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    return null;
+  }
+
   async function resolveByPermalinkPath(path) {
     await load();
     const cached = cachedEntry(path);
     if (cached) return cached;
 
     return dedupe('resolve:' + path, async () => {
-      const clientId = window.SCSMAuth.getClientId();
+      const clientId = await waitForClientId();
       if (!clientId) return null;
       const url = 'https://soundcloud.com' + path;
       const res = await fetch(`${API_BASE}/resolve?url=${encodeURIComponent(url)}&client_id=${clientId}`, {
@@ -200,7 +226,7 @@
     }
 
     return dedupe('id:' + id, async () => {
-      const clientId = window.SCSMAuth.getClientId();
+      const clientId = await waitForClientId();
       if (!clientId) return null;
       const res = await fetch(`${API_BASE}/tracks/${id}?client_id=${clientId}&app_locale=en`, {
         credentials: 'include',
@@ -248,7 +274,7 @@
   // redirect URL is the kind of thing that can expire.
   async function getDownloadRedirectUrl(trackId) {
     return dedupe('download:' + trackId, async () => {
-      const clientId = window.SCSMAuth.getClientId();
+      const clientId = await waitForClientId();
       if (!clientId) return null;
       const res = await fetch(`${API_BASE}/tracks/${trackId}/download?client_id=${clientId}`, {
         credentials: 'include',
