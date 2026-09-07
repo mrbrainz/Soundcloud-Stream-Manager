@@ -95,11 +95,19 @@
         check('the sidebar tag gets NO button (#50 exclusion)', document.querySelector('#sidebar .soundTitle__tag').nextElementSibling, null);
 
         // ---- clicking the button adds the genre to the shared setting ----
+        // A real mouse click gives the clicked <button> browser focus (a
+        // script-triggered .click() alone does not, so focus it first to
+        // reproduce that) - the CSS shows the button while :focus for
+        // keyboard users, so without an explicit blur() after handling the
+        // click it would stay stuck visible (opacity 1) instead of only
+        // showing on an actual hover.
+        btn.focus();
         btn.click();
         await wait(30);
         const afterClick = await window.SCSMSettings.get();
         check('clicking the button adds the tag\'s text to hiddenGenres', afterClick.hiddenGenres, ['Future Garage']);
         check('the button gets the "added" CSS class', btn.classList.contains('scsm-genre-add-btn--added'), true);
+        check('the button blurs itself after a click, so it does not stay stuck visible via :focus', document.activeElement === btn, false);
         check('the checkmark icon shows once added (not hovering)', iconVisible(btn, 'scsm-genre-icon-check'), true);
         check('the crossed-eye icon is hidden once added', iconVisible(btn, 'scsm-genre-icon-hide'), false);
         // jsdom-free CSS :hover can't be simulated by dispatching a

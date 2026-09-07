@@ -18,7 +18,16 @@
   'use strict';
 
   const API_BASE = 'https://api-v2.soundcloud.com';
-  const CACHE_KEY = 'scsm_metadata_cache_v1';
+  // Bumped v1 -> v2 when #53 added `genre` to storeTrack()'s normalized
+  // shape: resolveByPermalinkPath()/getTrackById() return a cached entry
+  // as-is within the 30-day TTL with no shape check, so every track
+  // already cached under v1 (i.e. almost everything, this many hours into
+  // active use) would otherwise stay permanently missing `genre` until
+  // its TTL happened to expire - hideGenreTracks.js silently failing to
+  // match tracks that visibly ARE tagged with a hidden genre. A key bump
+  // is a full, clean invalidation; bump it again for any future field
+  // that changes storeTrack()'s shape.
+  const CACHE_KEY = 'scsm_metadata_cache_v2';
   const CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 30; // 30 days - matches the repost-age reference script; upload dates/durations don't change, this just bounds cache growth
   const MAX_CONCURRENT = 3; // same limit the reference scripts use to stay low-volume/organic-looking
 

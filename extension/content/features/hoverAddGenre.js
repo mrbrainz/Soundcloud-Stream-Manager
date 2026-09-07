@@ -138,6 +138,12 @@
       } else {
         addGenre(genre);
       }
+      // A clicked <button> keeps browser focus after the click, and the
+      // CSS below shows the button while :focus for keyboard users - left
+      // unblurred, a MOUSE click would leave it visually stuck open
+      // (opacity 1) until something else steals focus, instead of only
+      // showing on an actual hover as intended.
+      btn.blur();
     });
 
     tagEl.insertAdjacentElement('afterend', btn);
