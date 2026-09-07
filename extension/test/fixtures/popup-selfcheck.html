@@ -30,21 +30,21 @@
       <div class="rows">
         <div class="row">
           <div class="row-text">
-            <label class="row-title" for="showRepostAge">repost age check</label>
+            <label class="row-title" for="showRepostAge" title="Shows how old a reposted track's original upload actually is.">repost age check</label>
           </div>
           <label class="toggle"><input type="checkbox" id="showRepostAge"><span class="knob"></span></label>
         </div>
 
         <div class="row">
           <div class="row-text">
-            <label class="row-title" for="showPlaylistMembership">playlist receipts</label>
+            <label class="row-title" for="showPlaylistMembership" title="Shows which of your own playlists a track is already in.">playlist receipts</label>
           </div>
           <label class="toggle"><input type="checkbox" id="showPlaylistMembership"><span class="knob"></span></label>
         </div>
 
         <div class="row">
           <div class="row-text">
-            <label class="row-title" for="hideOldTracks">delete the ancient ones</label>
+            <label class="row-title" for="hideOldTracks" title="Hides any track (repost or original upload) older than the day threshold below.">delete the ancient ones</label>
             <div class="stepper"><input type="number" id="hideOldTracksDays" class="threshold" min="1"> <span>days deep</span></div>
           </div>
           <label class="toggle"><input type="checkbox" id="hideOldTracks"><span class="knob"></span></label>
@@ -52,22 +52,22 @@
 
         <div class="row">
           <div class="row-text">
-            <label class="row-title" for="hideLongTracks">no snooze tracks</label>
-            <div class="stepper"><input type="number" id="hideLongTracksMinutes" class="threshold" min="1"> <span>min cap</span></div>
+            <label class="row-title" for="hideLongTracks" title="Hides any track longer than the minute threshold below - handy for skipping full mixes.">no snooze tracks</label>
+            <div class="stepper"><input type="number" id="hideLongTracksMinutes" class="threshold" min="1"> <span>mins deep</span></div>
           </div>
           <label class="toggle"><input type="checkbox" id="hideLongTracks"><span class="knob"></span></label>
         </div>
 
         <div class="row">
           <div class="row-text">
-            <label class="row-title" for="hideTracksInPlaylist">already got it</label>
+            <label class="row-title" for="hideTracksInPlaylist" title="Hides tracks you've already sorted into one of your own playlists.">already got it</label>
           </div>
           <label class="toggle"><input type="checkbox" id="hideTracksInPlaylist"><span class="knob"></span></label>
         </div>
 
         <div class="row">
           <div class="row-text">
-            <label class="row-title" for="hideGenres">not the vibe</label>
+            <label class="row-title" for="hideGenres" title="Hides tracks tagged with any genre on your hidden list below.">not the vibe</label>
             <div class="genre-input-row">
               <input type="text" id="hiddenGenreInput" class="genre-input" placeholder="e.g. Techno">
               <button type="button" id="hiddenGenreAdd" class="genre-add-btn">add</button>
@@ -79,14 +79,14 @@
 
         <div class="row">
           <div class="row-text">
-            <label class="row-title" for="showSearchLinks">find it everywhere</label>
+            <label class="row-title" for="showSearchLinks" title="Adds one-click search links to Deezer, Apple Music, Beatport, and Spotify for each track.">find it everywhere</label>
           </div>
           <label class="toggle"><input type="checkbox" id="showSearchLinks"><span class="knob"></span></label>
         </div>
 
         <div class="row">
           <div class="row-text">
-            <label class="row-title" for="showDownloadButton">yoink button</label>
+            <label class="row-title" for="showDownloadButton" title="Adds a direct download link for any track SoundCloud itself allows downloading.">yoink button</label>
           </div>
           <label class="toggle"><input type="checkbox" id="showDownloadButton"><span class="knob"></span></label>
         </div>
@@ -129,6 +129,16 @@
           'hideOldTracksDays is NOT disabled while off - editable before turning the feature on',
           document.getElementById('hideOldTracksDays').disabled,
           false
+        );
+
+        // ---- #66: every row title has a plain-English tooltip, and the zoomer-slang "min cap" clash is gone ----
+        document.querySelectorAll('.row-title').forEach((label) => {
+          check(`"${label.textContent.trim()}" row-title has a non-empty title tooltip`, !!label.getAttribute('title'), true);
+        });
+        check(
+          'the minutes-threshold stepper no longer says "min cap" (zoomer slang for "lying")',
+          document.querySelector('#hideLongTracksMinutes').nextElementSibling.textContent,
+          'mins deep'
         );
 
         // ---- editing the threshold BEFORE enabling the feature still persists ----
