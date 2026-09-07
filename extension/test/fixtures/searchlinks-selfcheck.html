@@ -105,8 +105,19 @@
           soundActions.nextElementSibling && soundActions.nextElementSibling.classList.contains('scsm-icon-row'),
           true
         );
+        check(
+          'the icon row has a 3px top margin separating it from .soundActions (#68)',
+          soundActions.nextElementSibling.style.marginTop,
+          '3px'
+        );
         check('links reuse SoundCloud\'s own sc-button classes for native styling', deezerLink.classList.contains('sc-button-secondary'), true);
-        check('a link shows a colored-initial badge, not a raw text label', deezerLink.textContent.trim(), 'D');
+        // #68: a real per-platform icon image, not the #40 colored-initial
+        // badge fallback - chrome-mock.js's getURL() mirrors a real
+        // chrome.runtime.getURL() by resolving to the extension's own
+        // icons/services/ path.
+        const deezerIcon = deezerLink.querySelector('img');
+        check('a link shows a real icon image, not the colored-initial badge fallback', !!deezerIcon, true);
+        check('the icon image points at the extension\'s own bundled asset', deezerIcon && deezerIcon.getAttribute('src'), '/icons/services/icon-deezer.png');
 
         // ---- dedupe: a title that already contains the artist name shouldn't repeat it ----
         // label-track (mocks/data.js): title "Neumonic - Massive", artist
