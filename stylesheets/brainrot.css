@@ -1,0 +1,266 @@
+:root {
+  --bg-deep: #0c0116;
+  --bg-panel: #160726;
+  --panel-edge: #2a0f45;
+  --magenta: #ff2ec4;
+  --lime: #c6ff1a;
+  --cyan: #19f4ff;
+  --grape: #8b5cf6;
+  --orange: #ff7a29;
+  --ink: #fdf6ff;
+  --ink-dim: #c9b6de;
+  --card: #1f0d33;
+  --card-edge: #3a1a5c;
+  --shadow-hard: #05000a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Baloo 2', ui-rounded, sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 15% 0%, rgba(255, 46, 196, 0.25), transparent 40%),
+    radial-gradient(circle at 85% 10%, rgba(25, 244, 255, 0.2), transparent 45%),
+    radial-gradient(circle at 50% 90%, rgba(198, 255, 26, 0.12), transparent 50%),
+    var(--bg-deep);
+}
+
+a {
+  color: var(--cyan);
+}
+
+.wrap {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 56px 24px 80px;
+}
+
+/* ---- hero ---- */
+.hero {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.hero img.logo {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px var(--card-edge), 0 20px 50px -15px rgba(255, 46, 196, 0.5);
+  margin-bottom: 18px;
+}
+
+h1.brand {
+  font-family: 'Bungee', 'Baloo 2', sans-serif;
+  font-size: clamp(36px, 8vw, 56px);
+  line-height: 1.05;
+  margin: 0;
+  letter-spacing: 0.01em;
+  background: linear-gradient(95deg, var(--lime), var(--cyan) 35%, var(--magenta) 70%, var(--orange));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.35);
+}
+
+.tagline {
+  font-family: 'Space Mono', monospace;
+  font-size: 14px;
+  color: var(--ink-dim);
+  margin-top: 10px;
+}
+
+.tagline .heart {
+  color: var(--magenta);
+}
+
+.hero-sub {
+  max-width: 520px;
+  margin: 18px auto 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink-dim);
+}
+
+.cta-row {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 26px;
+  flex-wrap: wrap;
+}
+
+.cta {
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  text-decoration: none;
+  display: inline-block;
+  box-shadow: 0 5px 0 var(--shadow-hard);
+  transform: rotate(-0.6deg);
+}
+
+.cta:hover {
+  transform: rotate(-0.6deg) translateY(-1px);
+}
+
+.cta.primary {
+  background: linear-gradient(95deg, var(--magenta), var(--orange));
+  color: #2a0000;
+}
+
+.cta.secondary {
+  background: #0f0817;
+  color: var(--ink);
+  border: 1.5px solid var(--card-edge);
+  box-shadow: none;
+}
+
+/* ---- sections ---- */
+section {
+  margin-top: 56px;
+}
+
+h2.section-title {
+  font-family: 'Bungee', 'Baloo 2', sans-serif;
+  font-size: 22px;
+  margin: 0 0 8px;
+  transform: rotate(-0.8deg);
+  display: inline-block;
+}
+
+.section-sub {
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  color: var(--ink-dim);
+  margin: 0 0 22px;
+}
+
+/* ---- feature cards, matching the popup's row styling ---- */
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.row {
+  background: var(--card);
+  border: 1.5px solid var(--card-edge);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.emoji {
+  font-size: 22px;
+  width: 30px;
+  text-align: center;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.4));
+}
+
+.row-title {
+  font-weight: 800;
+  font-size: 15px;
+  margin: 0 0 4px;
+}
+
+.row-sub {
+  font-size: 13px;
+  color: var(--ink-dim);
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* ---- install steps ---- */
+.steps {
+  counter-reset: step;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.steps li {
+  counter-increment: step;
+  background: var(--card);
+  border: 1.5px solid var(--card-edge);
+  border-radius: 14px;
+  padding: 14px 16px 14px 52px;
+  position: relative;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 14px;
+  top: 12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, var(--lime), var(--cyan));
+  color: #0c1400;
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.steps code {
+  background: #0f0817;
+  border: 1px solid var(--card-edge);
+  border-radius: 5px;
+  padding: 1px 6px;
+  font-family: 'Space Mono', monospace;
+  font-size: 12.5px;
+  color: var(--lime);
+}
+
+.note {
+  font-family: 'Space Mono', monospace;
+  font-size: 11.5px;
+  color: var(--ink-dim);
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--orange);
+  background: rgba(255, 122, 41, 0.08);
+  border-radius: 0 8px 8px 0;
+  line-height: 1.5;
+}
+
+/* ---- footer ---- */
+footer {
+  margin-top: 64px;
+  padding-top: 20px;
+  border-top: 1.5px dashed var(--card-edge);
+  text-align: center;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+
+footer a {
+  color: var(--ink-dim);
+  text-decoration: underline;
+}
+
+footer .foot-links {
+  margin-top: 8px;
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
