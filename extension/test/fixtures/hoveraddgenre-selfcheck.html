@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SCSM mock fixture — hover-add-genre feature self-check</title>
+    <style>
+      body { font-family: sans-serif; max-width: 640px; margin: 24px auto; }
+      .fixture-note { color: #888; font-size: 12px; }
+      #results { font-family: monospace; white-space: pre-wrap; }
+      .pass { color: #1a7f37; }
+      .fail { color: #cf222e; }
+      li.soundList__item { border: 1px solid #ddd; padding: 8px; margin-bottom: 6px; }
+    </style>
+  </head>
+  <body>
+    <p class="fixture-note">
+      Exercises "add to hidden genres" (#54) end-to-end: confirming
+      <code>content/features/hoverAddGenre.js</code> attaches a "+" button
+      next to a live-verified <code>a.soundTitle__tag</code> genre pill,
+      that clicking it writes to the SAME <code>hiddenGenres</code> setting
+      #53's popup free-text input manages, that it's idempotent/
+      case-insensitive, that it reflects an externally-added genre as
+      already-added ("✓"), and that it skips a tag inside the /feed
+      sidebar (#50). See <a href="../README.md">test/README.md</a>.
+    </p>
+    <div id="results">running…</div>
+
+    <ul>
+      <li class="soundList__item" id="row-a">
+        <a class="soundTitle__title" href="/testartist/track-a">Track A</a>
+        <div class="soundTitle__tagContainer">
+          <a class="soundTitle__tag" href="/tags/future%20garage"><span class="sc-tagContent">Future Garage</span></a>
+        </div>
+      </li>
+    </ul>
+
+    <!-- Live-verified (#50): the /feed sidebar can carry the same tag
+         markup - it must never get the hover-add button either. -->
+    <div class="l-sidebar-right" id="sidebar">
+      <div class="soundTitle__tagContainer">
+        <a class="soundTitle__tag" href="/tags/techno"><span class="sc-tagContent">Techno</span></a>
+      </div>
+    </div>
+
+    <script src="/test/mocks/chrome-mock.js"></script>
+    <script src="/lib/settings.js"></script>
+    <script src="/lib/dom.js"></script>
+    <script src="/content/features/hoverAddGenre.js"></script>
+    <script>
+      (async function () {
+        const out = document.getElementById('results');
+        const lines = [];
+        let failures = 0;
+
+        function check(label, actual, expected) {
+          const ok = JSON.stringify(actual) === JSON.stringify(expected);
+          if (!ok) failures++;
+          lines.push(
+            `${ok ? 'PASS' : 'FAIL'} ${label}` +
+              (ok ? '' : ` — expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`)
+          );
+        }
+        function wait(ms) {
+          return new Promise((resolve) => setTimeout(resolve, ms));
+        }
+
+        await wait(100);
+        // Unlike the toggle-gated hide filters (whose applySetting() fires
+        // its own rescan() the moment their setting is first read), this
+        // feature has no enable toggle - it depends entirely on
+        // lib/dom.js's deferred initial rescan(). A dev-server fetch-timing
+        // race in this sandboxed test browser (unrelated to any of this
+        // feature's own code - reproduces identically via a plain
+        // dom-selfcheck.html run against a clean master checkout) can
+        // occasionally beat that deferred scan to the punch, so force one
+        // explicitly rather than depending on timing alone.
+        window.SCSMDom.rescan();
+        await wait(100);
+
+        const tag = document.querySelector('#row-a .soundTitle__tag');
+        const btn = tag.nextElementSibling;
+        check('a "+" button is inserted right after the tag', btn && btn.classList.contains('scsm-genre-add-btn'), true);
+        check('the button starts in the "not added" state', btn.textContent, '+');
+
+        check('the sidebar tag gets NO button (#50 exclusion)', document.querySelector('#sidebar .soundTitle__tag').nextElementSibling, null);
+
+        // ---- clicking the button adds the genre to the shared setting ----
+        btn.click();
+        await wait(30);
+        const afterClick = await window.SCSMSettings.get();
+        check('clicking the button adds the tag\'s text to hiddenGenres', afterClick.hiddenGenres, ['Future Garage']);
+        check('the button flips to the "added" state', btn.textContent, '✓');
+        check('the button gets the "added" CSS class', btn.classList.contains('scsm-genre-add-btn--added'), true);
+
+        // ---- clicking again is a harmless no-op (idempotent) ----
+        btn.click();
+        await wait(30);
+        const afterSecondClick = await window.SCSMSettings.get();
+        check('clicking an already-added genre again does not duplicate it', afterSecondClick.hiddenGenres, ['Future Garage']);
+
+        // ---- an externally-added genre (e.g. via the popup) is reflected without needing a rescan ----
+        await window.SCSMSettings.set({ hiddenGenres: [] });
+        await wait(30);
+        check('the button reverts to "+" once the genre is removed elsewhere', btn.textContent, '+');
+
+        await window.SCSMSettings.set({ hiddenGenres: ['future garage'] }); // different case, same genre
+        await wait(30);
+        check('a case-insensitive match elsewhere still flips the button to "added"', btn.textContent, '✓');
+
+        // ---- idempotency of the button itself: rescanning doesn't add a second one ----
+        window.SCSMDom.rescan();
+        await wait(50);
+        check('rescanning does not insert a second button', tag.parentElement.querySelectorAll('.scsm-genre-add-btn').length, 1);
+
+        out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
+        out.className = failures === 0 ? 'pass' : 'fail';
+        console.log('[SCSM selfcheck]', failures === 0 ? 'ALL PASSED' : failures + ' FAILED', lines);
+      })();
+    </script>
+  </body>
+</html>
