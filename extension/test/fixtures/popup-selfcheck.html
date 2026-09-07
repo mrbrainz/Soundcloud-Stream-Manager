@@ -91,6 +91,17 @@
           <label class="toggle"><input type="checkbox" id="showDownloadButton"><span class="knob"></span></label>
         </div>
       </div>
+
+      <div class="scope-section">
+        <div class="scope-label">where it works</div>
+        <div class="scope-row">
+          <label class="scope-chip"><input type="checkbox" id="pageType-feed" value="feed"> feed</label>
+          <label class="scope-chip"><input type="checkbox" id="pageType-discover" value="discover"> discover</label>
+          <label class="scope-chip"><input type="checkbox" id="pageType-track" value="track"> tracks</label>
+          <label class="scope-chip"><input type="checkbox" id="pageType-profile" value="profile"> profiles</label>
+          <label class="scope-chip"><input type="checkbox" id="pageType-playlist" value="playlist"> playlists</label>
+        </div>
+      </div>
     </div>
 
     <img id="hoverEasterEgg" class="hover-easter-egg" src="/popup/images/fellow-kids.webp" alt="" hidden>
@@ -249,6 +260,35 @@
         fire(genresToggle, 'change');
         await new Promise((resolve) => setTimeout(resolve, 20));
         check('checking hideGenres persists to settings', (await window.SCSMSettings.get()).hideGenres, true);
+
+        // ---- #65 page-type scope chips: all 5 checked by default, unchecking one persists just that removal ----
+        ['feed', 'discover', 'track', 'profile', 'playlist'].forEach((type) => {
+          check(`pageType-${type} starts checked (all page types enabled by default)`, document.getElementById('pageType-' + type).checked, true);
+        });
+
+        const trackChip = document.getElementById('pageType-track');
+        trackChip.checked = false;
+        fire(trackChip, 'change');
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        const afterUncheck = await window.SCSMSettings.get();
+        check('unchecking a scope chip removes just that type from enabledPageTypes', afterUncheck.enabledPageTypes, ['feed', 'discover', 'profile', 'playlist']);
+
+        trackChip.checked = true;
+        fire(trackChip, 'change');
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        const afterRecheck = await window.SCSMSettings.get();
+        check(
+          'rechecking it adds the type back (order doesn\'t matter, membership does)',
+          [...afterRecheck.enabledPageTypes].sort(),
+          ['discover', 'feed', 'playlist', 'profile', 'track']
+        );
+
+        // ---- an external change (e.g. another popup instance) reflects back into the chips too ----
+        await window.SCSMSettings.set({ enabledPageTypes: ['feed'] });
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        check('an external enabledPageTypes change unchecks the right chips', document.getElementById('pageType-discover').checked, false);
+        check('...and leaves the still-enabled one checked', document.getElementById('pageType-feed').checked, true);
+        await window.SCSMSettings.set({ enabledPageTypes: ['feed', 'discover', 'track', 'profile', 'playlist'] }); // reset for any later checks
 
         // ---- #51 hover easter egg: hovering the title shows/follows/hides the image ----
         const egg = document.getElementById('hoverEasterEgg');

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SCSM mock fixture — page-type scoping self-check (#65)</title>
+    <style>
+      body { font-family: sans-serif; max-width: 640px; margin: 24px auto; }
+      .fixture-note { color: #888; font-size: 12px; }
+      #results { font-family: monospace; white-space: pre-wrap; }
+      .pass { color: #1a7f37; }
+      .fail { color: #cf222e; }
+      li.soundList__item { border: 1px solid #ddd; padding: 8px; margin-bottom: 6px; }
+    </style>
+  </head>
+  <body>
+    <p class="fixture-note">
+      Exercises #65/#79 end-to-end with a REAL feature file
+      (<code>hideOldTracks.js</code>): confirms a feature stays active on
+      an enabled page type, goes inert on a disabled one (even while its
+      own setting is on), live-reacts to <code>enabledPageTypes</code>
+      changing, AND - the actual #79 bug - live-reacts to an in-app
+      SPA navigation (<code>history.pushState</code>, exactly how
+      SoundCloud's own router navigates, e.g. clicking your own avatar)
+      WITHOUT any settings change at all. See
+      <a href="../README.md">test/README.md</a>.
+    </p>
+    <div id="results">running…</div>
+
+    <ul>
+      <li class="soundList__item" id="row-old">
+        <a class="soundTitle__title" href="/testartist/old-repost-track">Old Repost Track</a>
+      </li>
+    </ul>
+
+    <script src="/test/mocks/chrome-mock.js"></script>
+    <script src="/test/mocks/data.js"></script>
+    <script src="/test/mocks/sc-api-mock.js"></script>
+    <script src="/content/mainWorldBridge.js"></script>
+    <script src="/lib/settings.js"></script>
+    <script src="/lib/auth.js"></script>
+    <script src="/lib/api.js"></script>
+    <script src="/lib/dom.js"></script>
+    <script src="/lib/rowState.js"></script>
+    <script src="/content/features/hideOldTracks.js"></script>
+    <script>
+      (async function () {
+        const out = document.getElementById('results');
+        const lines = [];
+        let failures = 0;
+
+        function check(label, actual, expected) {
+          const ok = JSON.stringify(actual) === JSON.stringify(expected);
+          if (!ok) failures++;
+          lines.push(
+            `${ok ? 'PASS' : 'FAIL'} ${label}` +
+              (ok ? '' : ` — expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`)
+          );
+        }
+        function wait(ms) {
+          return new Promise((resolve) => setTimeout(resolve, ms));
+        }
+        function minimized() {
+          return window.SCSMRowState.isMinimized(document.getElementById('row-old'));
+        }
+
+        // Simulate being on a "track" page shape (#65's classifier) for
+        // the whole test - this fixture's own real path
+        // (/test/fixtures/...) doesn't match any of the 5 recognized
+        // shapes, so without this every check below would exercise the
+        // "unclassified page defaults to enabled" path instead of actual
+        // scoping.
+        history.pushState({}, '', '/testartist/some-track');
+        check('the simulated location classifies as a track page', window.SCSMDom.pageType(), 'track');
+
+        await wait(30);
+        check('nothing minimized before the feature is enabled', minimized(), false);
+
+        // ---- default enabledPageTypes (all 5) includes "track" - the feature works normally ----
+        await window.SCSMSettings.set({ hideOldTracks: true });
+        await wait(100);
+        check('with the default (all page types enabled), the feature hides a matching row', minimized(), true);
+
+        // ---- narrowing enabledPageTypes to exclude "track" turns the feature off live, even though hideOldTracks itself stays true ----
+        await window.SCSMSettings.set({ enabledPageTypes: ['feed', 'discover', 'profile', 'playlist'] });
+        await wait(100);
+        check('excluding "track" from enabledPageTypes restores the row, without touching hideOldTracks itself', minimized(), false);
+        check('hideOldTracks itself is untouched by the page-type change', (await window.SCSMSettings.get()).hideOldTracks, true);
+
+        // ---- re-including "track" re-enables the feature live, no reload needed ----
+        await window.SCSMSettings.set({ enabledPageTypes: ['feed', 'discover', 'track', 'profile', 'playlist'] });
+        await wait(100);
+        check('re-including "track" re-hides the row live', minimized(), true);
+
+        // ---- simulate navigating to a DIFFERENT page type (profile) while the filter is enabled on track pages only ----
+        await window.SCSMSettings.set({ enabledPageTypes: ['profile'] });
+        await wait(100);
+        check('excluding the current page type restores the row', minimized(), false);
+
+        // ---- #79: the actual reported bug - an in-app SPA navigation, with NO settings change at all ----
+        // Reproduces the exact repro steps: feed-only enabled, hide a
+        // matching row there, then navigate (via pushState, exactly how
+        // SoundCloud's own router does it - e.g. clicking your own avatar
+        // to your profile) to a page type that's NOT enabled. Before the
+        // fix, nothing told the feature its `enabled` flag had gone
+        // stale, so the row stayed hidden until a real page reload.
+        history.pushState({}, '', '/feed');
+        await window.SCSMSettings.set({ enabledPageTypes: ['feed'], hideOldTracks: true });
+        await wait(150);
+        check('setup: on a "feed" page with only "feed" enabled, the row is hidden', minimized(), true);
+
+        history.pushState({}, '', '/someartist'); // the SPA nav itself - no settings.set() call at all
+        await wait(150); // let mainWorldBridge.js's patched pushState's scsm:navigation event + dom.js's rescan/debounce settle
+        check('pageType() reflects the new URL after the SPA nav', window.SCSMDom.pageType(), 'profile');
+        check(
+          'the row is restored after an in-app SPA navigation to a disabled page type - no reload, no settings change',
+          minimized(),
+          false
+        );
+
+        // ---- navigating BACK to an enabled page type re-hides it live too ----
+        history.pushState({}, '', '/feed');
+        await wait(150);
+        check('navigating back to an enabled page type re-hides the row', minimized(), true);
+
+        out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
+        out.className = failures === 0 ? 'pass' : 'fail';
+        console.log('[SCSM selfcheck]', failures === 0 ? 'ALL PASSED' : failures + ' FAILED', lines);
+      })();
+    </script>
+  </body>
+</html>

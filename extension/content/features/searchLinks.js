@@ -93,7 +93,7 @@
   }
 
   function applySetting(settings) {
-    const shouldEnable = !!settings.showSearchLinks;
+    const shouldEnable = !!settings.showSearchLinks && window.SCSMDom.isPageTypeEnabled(settings);
     if (shouldEnable === enabled) return;
     enabled = shouldEnable;
     if (enabled) {
@@ -107,5 +107,6 @@
     window.SCSMDom.onScan(onDirty);
     window.SCSMSettings.get().then(applySetting);
     window.SCSMSettings.onChange(applySetting);
+    window.SCSMDom.onPageTypeChange(() => window.SCSMSettings.get().then(applySetting));
   }
 })();

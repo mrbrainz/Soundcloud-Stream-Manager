@@ -72,7 +72,7 @@
   }
 
   function applySetting(settings) {
-    const shouldEnable = !!settings.hideOldTracks;
+    const shouldEnable = !!settings.hideOldTracks && window.SCSMDom.isPageTypeEnabled(settings);
     const thresholdChanged = settings.hideOldTracksDays !== thresholdDays;
     thresholdDays = settings.hideOldTracksDays;
 
@@ -100,5 +100,6 @@
     window.SCSMDom.onScan(onDirty);
     window.SCSMSettings.get().then(applySetting);
     window.SCSMSettings.onChange(applySetting);
+    window.SCSMDom.onPageTypeChange(() => window.SCSMSettings.get().then(applySetting));
   }
 })();

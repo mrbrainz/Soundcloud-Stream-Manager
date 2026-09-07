@@ -151,7 +151,7 @@
   }
 
   function applySetting(settings) {
-    const shouldEnable = !!settings.showRepostAge;
+    const shouldEnable = !!settings.showRepostAge && window.SCSMDom.isPageTypeEnabled(settings);
     if (shouldEnable === enabled) return;
     enabled = shouldEnable;
     if (enabled) {
@@ -165,5 +165,6 @@
     window.SCSMDom.onScan(onDirty);
     window.SCSMSettings.get().then(applySetting);
     window.SCSMSettings.onChange(applySetting);
+    window.SCSMDom.onPageTypeChange(() => window.SCSMSettings.get().then(applySetting));
   }
 })();

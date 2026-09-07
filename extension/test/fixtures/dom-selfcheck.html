@@ -117,6 +117,44 @@
         window.SCSMDom.rescan();
         check('rescan() immediately re-notifies with document.body', rescanCalls[0] && rescanCalls[0][0] === document.body, true);
 
+        // ---- page-type classification (#65) ----
+        // pushState changes location.pathname without a real navigation,
+        // so pageType() (which reads location.pathname live, not cached)
+        // can be exercised against every live-verified real path shape
+        // from a single fixture page.
+        function checkPageType(path, expected) {
+          history.pushState({}, '', path);
+          check(`pageType() for "${path}"`, window.SCSMDom.pageType(), expected);
+        }
+        checkPageType('/feed', 'feed');
+        checkPageType('/stream', 'feed');
+        checkPageType('/discover', 'discover');
+        checkPageType('/djbrainz', 'profile');
+        checkPageType('/djbrainz/behold-garage-n-bass-episode', 'track');
+        checkPageType('/djbrainz/sets/radio-shows', 'playlist');
+        checkPageType('/you/library', null); // reserved root segment, not a real profile
+        checkPageType('/notifications', null);
+        checkPageType('/', null);
+        checkPageType('/djbrainz/', 'profile'); // trailing slash doesn't change the classification
+
+        check('isPageTypeEnabled() defaults true with no settings object', window.SCSMDom.isPageTypeEnabled(undefined), true);
+        history.pushState({}, '', '/djbrainz');
+        check(
+          'isPageTypeEnabled() is true when the current type is on the list',
+          window.SCSMDom.isPageTypeEnabled({ enabledPageTypes: ['profile', 'feed'] }),
+          true
+        );
+        check(
+          'isPageTypeEnabled() is false when the current type is NOT on the list',
+          window.SCSMDom.isPageTypeEnabled({ enabledPageTypes: ['feed'] }),
+          false
+        );
+        history.pushState({}, '', '/notifications'); // an unclassified page shape
+        check(
+          'isPageTypeEnabled() defaults true for an unclassified page shape, even with a narrow list',
+          window.SCSMDom.isPageTypeEnabled({ enabledPageTypes: ['feed'] }),
+          true
+        );
         render();
         console.log('[SCSM selfcheck]', failures === 0 ? 'ALL PASSED' : failures + ' FAILED', lines);
       })();

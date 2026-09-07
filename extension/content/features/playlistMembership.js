@@ -243,7 +243,7 @@
   }
 
   async function applySetting(settings) {
-    const shouldEnable = !!settings.showPlaylistMembership;
+    const shouldEnable = !!settings.showPlaylistMembership && window.SCSMDom.isPageTypeEnabled(settings);
     if (shouldEnable === enabled) return;
     enabled = shouldEnable;
 
@@ -263,5 +263,6 @@
     window.SCSMDom.onScan(onDirty);
     window.SCSMSettings.get().then(applySetting);
     window.SCSMSettings.onChange(applySetting);
+    window.SCSMDom.onPageTypeChange(() => window.SCSMSettings.get().then(applySetting));
   }
 })();

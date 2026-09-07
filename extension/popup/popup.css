@@ -315,6 +315,54 @@ h1.brand {
   padding: 0 3px;
 }
 
+.scope-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1.5px dashed var(--card-edge);
+}
+
+.scope-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 8px;
+  cursor: default;
+}
+
+.scope-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.scope-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10.5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #0f0817;
+  border: 1.5px solid var(--card-edge);
+  color: var(--ink-dim);
+  cursor: pointer;
+}
+
+.scope-chip:has(input:checked) {
+  background: linear-gradient(90deg, var(--lime), var(--cyan));
+  border-color: transparent;
+  color: #0c1400;
+  font-weight: 700;
+}
+
+.scope-chip input {
+  margin: 0;
+  accent-color: var(--grape);
+}
+
 footer.pop-foot {
   margin-top: 12px;
   padding-top: 8px;
