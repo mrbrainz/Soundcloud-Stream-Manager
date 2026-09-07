@@ -27,6 +27,16 @@
       <li class="soundList__item"><a class="soundTitle__title" href="/testartist/long-mix">Long Mix Session</a></li>
     </ul>
 
+    <!-- Live-verified (#50): soundcloud.com's /feed right-hand column
+         ("New tracks"/"Artists you should follow"/"Recently played") wraps
+         its own soundTitle__title-shaped anchors in a `.l-sidebar-right`
+         layout container - those must never be treated as stream tracks. -->
+    <div class="l-sidebar-right" id="sidebar">
+      <ul class="soundBadgeList">
+        <li class="soundBadgeList__item"><a class="soundTitle__title" href="/testartist/in-playlist-track">In Playlist Track</a></li>
+      </ul>
+    </div>
+
     <script src="/test/mocks/chrome-mock.js"></script>
     <script src="/test/mocks/data.js"></script>
     <script src="/test/mocks/sc-api-mock.js"></script>
@@ -59,11 +69,21 @@
 
         // ---- static row matching ----
         const anchors = window.SCSMDom.findTrackAnchors(document.body);
-        check('findTrackAnchors finds all 3 rows', anchors.length, 3);
+        check('findTrackAnchors finds only the 3 main-stream rows, not the sidebar one', anchors.length, 3);
         check(
           'permalinkPathFromHref resolves each anchor correctly',
           anchors.map((a) => window.SCSMDom.permalinkPathFromHref(a.getAttribute('href'))),
           ['/testartist/old-repost-track', '/testartist/recent-repost-track', '/testartist/long-mix']
+        );
+
+        // ---- sidebar exclusion (#50) ----
+        const sidebarAnchor = document.querySelector('#sidebar a.soundTitle__title');
+        check('isInSidebar is true for a .l-sidebar-right anchor', window.SCSMDom.isInSidebar(sidebarAnchor), true);
+        check('isInSidebar is false for a main-stream anchor', window.SCSMDom.isInSidebar(anchors[0]), false);
+        check(
+          'findTrackAnchors(sidebar) directly returns nothing',
+          window.SCSMDom.findTrackAnchors(document.getElementById('sidebar')).length,
+          0
         );
 
         check(

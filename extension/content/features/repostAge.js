@@ -130,10 +130,10 @@
     if (root.nodeType === Node.TEXT_NODE) root = root.parentElement;
     if (!root) return [];
     const leaves = [];
-    if (isRepostLeaf(root)) leaves.push(root);
+    if (isRepostLeaf(root) && !window.SCSMDom.isInSidebar(root)) leaves.push(root);
     if (root.querySelectorAll) {
       root.querySelectorAll('*').forEach((el) => {
-        if (isRepostLeaf(el)) leaves.push(el);
+        if (isRepostLeaf(el) && !window.SCSMDom.isInSidebar(el)) leaves.push(el);
       });
     }
     return leaves;
