@@ -208,6 +208,24 @@
     return cachedEntry(path);
   }
 
+  // All track ids currently cached with non-empty playlist membership.
+  // Lets the playlist-membership feature's crawl clear a track that has
+  // dropped OUT of every playlist since the last crawl - the crawl itself
+  // only ever sees tracks that are STILL in at least one playlist, so
+  // without this a track removed from its only playlist would keep
+  // showing a stale badge indefinitely, even across a page refresh (see
+  // board card #33).
+  async function getAllTrackIdsWithPlaylists() {
+    await load();
+    const ids = [];
+    for (const entry of Object.values(cache)) {
+      if (entry && entry.data && Array.isArray(entry.data.playlists) && entry.data.playlists.length > 0) {
+        ids.push(entry.data.id);
+      }
+    }
+    return ids;
+  }
+
   // Resolves the actual signed download link for a track the API has
   // already confirmed `downloadable`. NOT part of storeTrack()'s cached
   // shape - live-verified (#38) that /resolve and /tracks/{id} no longer
@@ -237,6 +255,7 @@
     getTrackById,
     getCachedByPermalinkPath,
     setPlaylistsForTrackId,
+    getAllTrackIdsWithPlaylists,
     getDownloadRedirectUrl,
     permalinkPath,
   };

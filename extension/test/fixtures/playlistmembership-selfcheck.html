@@ -88,9 +88,17 @@
           const badge = document.getElementById(id).querySelector('.scsm-playlist-badge');
           return badge ? badge.textContent.trim() : null;
         }
-        function fireFakeXHR(method, url, bodyObj) {
+        function fireFakeXHR(method, url, bodyObj, opts) {
           const xhr = new XMLHttpRequest();
-          xhr.open(method, url);
+          // Regression for #33: SoundCloud's real frontend can pass a URL
+          // object (not a plain string) to .open() - browsers accept this
+          // natively. patchXHR() used to check `typeof url === 'string'`
+          // at read time in .send(), which silently dropped interception
+          // with zero errors when this happened. Exercising it here with
+          // `asUrlObject` proves the fix without needing a whole separate
+          // test scenario - if the caller's usual assertions still pass
+          // unchanged, the URL-object path works exactly like the string one.
+          xhr.open(method, opts && opts.asUrlObject ? new URL(url) : url);
           xhr.send(bodyObj ? JSON.stringify(bodyObj) : undefined);
           xhr.status = 200;
           xhr.dispatchEvent(new Event('load'));
@@ -99,12 +107,32 @@
         await wait(30);
         check('no badges before the feature is enabled', badgeTextIn('row-in-playlist'), null);
 
+        // ---- simulate a track that WAS in a playlist as of a previous session, ----
+        // but has since been removed from it entirely (not reflected in
+        // mocks/data.js's playlistsPage) - a fresh crawl must clear this
+        // stale membership, not just leave it alone because the track
+        // itself isn't mentioned in any playlist the crawl finds (board
+        // card #33 - this is exactly what didn't happen live, even across
+        // a page refresh).
+        await window.SCSMApi.resolveByPermalinkPath('/testartist/old-repost-track');
+        await window.SCSMApi.setPlaylistsForTrackId(1001, [{ id: 9999, title: 'Stale Playlist From Last Session' }]);
+        check(
+          'stale membership seeded before the crawl runs',
+          window.SCSMApi.getCachedByPermalinkPath('/testartist/old-repost-track').playlists,
+          [{ id: 9999, title: 'Stale Playlist From Last Session' }]
+        );
+
         await window.SCSMSettings.set({ showPlaylistMembership: true });
         await wait(250); // crawl (with its 250ms inter-page delay) + initial rescan/resolve
 
         check('a track in 2 playlists shows the ">1" label', badgeTextIn('row-in-playlist'), '✓ in 2 playlists');
         check('a track in exactly 1 playlist names it', badgeTextIn('row-recent-repost'), '✓ in "Techno 2026"');
         check('a track in no playlists gets no badge', badgeTextIn('row-old-repost'), null);
+        check(
+          'the crawl clears stale membership for a track no longer in ANY playlist',
+          window.SCSMApi.getCachedByPermalinkPath('/testartist/old-repost-track').playlists,
+          []
+        );
 
         // ---- idempotency: rescanning doesn't duplicate the badge ----
         window.SCSMDom.rescan();
@@ -116,9 +144,12 @@
         );
 
         // ---- live sync: adding old-repost-track to "My Favourites" (5001) via a PUT ----
-        fireFakeXHR('PUT', 'https://api-v2.soundcloud.com/playlists/5001', { playlist: { tracks: [1005, 1001] } });
+        // Uses a URL object for .open()'s url arg, not a plain string -
+        // see fireFakeXHR's comment. If this whole block's assertions
+        // still pass exactly as they would with a string, the fix works.
+        fireFakeXHR('PUT', 'https://api-v2.soundcloud.com/playlists/5001', { playlist: { tracks: [1005, 1001] } }, { asUrlObject: true });
         await wait(100);
-        check('adding a track to a playlist (PUT) badges it live', badgeTextIn('row-old-repost'), '✓ in "My Favourites"');
+        check('adding a track to a playlist (PUT) badges it live even when .open() got a URL object', badgeTextIn('row-old-repost'), '✓ in "My Favourites"');
         check(
           'the other member of that playlist is unaffected',
           badgeTextIn('row-in-playlist'),

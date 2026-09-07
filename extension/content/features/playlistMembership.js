@@ -75,6 +75,18 @@
     for (const [trackIdStr, playlists] of Object.entries(trackToPlaylists)) {
       await window.SCSMApi.setPlaylistsForTrackId(Number(trackIdStr), playlists);
     }
+
+    // The loop above only ever touches tracks that are STILL in at least
+    // one playlist - a track dropped from its only (or all) playlist(s)
+    // since the last crawl is simply absent from trackToPlaylists, so its
+    // stale non-empty membership would otherwise never get cleared, even
+    // across a page refresh (board card #33).
+    const previouslyTracked = await window.SCSMApi.getAllTrackIdsWithPlaylists();
+    for (const trackId of previouslyTracked) {
+      if (!trackToPlaylists[trackId]) {
+        await window.SCSMApi.setPlaylistsForTrackId(trackId, []);
+      }
+    }
   }
 
   // ---------- keep membership in sync with your own add/remove/create/delete ----------
@@ -127,7 +139,19 @@
 
     OrigXHR.prototype.open = function (method, url, ...rest) {
       this.__scsmMethod = method;
-      this.__scsmUrl = url;
+      // Normalize to a string HERE, not at read time: modern app code can
+      // legally pass a URL object (or anything with a sane toString()) to
+      // .open() instead of a plain string, browsers accept it natively.
+      // Confirmed live (#33) that live-checking `typeof url === 'string'`
+      // later silently dropped interception with zero errors when this
+      // happened - matches the reported symptom exactly (a request that
+      // demonstrably matches everything patchXHR expects, on a confirmed
+      // XHR call, that still never triggered sync).
+      try {
+        this.__scsmUrl = typeof url === 'string' ? url : String(url);
+      } catch (e) {
+        this.__scsmUrl = '';
+      }
       return origOpen.call(this, method, url, ...rest);
     };
 
@@ -135,7 +159,7 @@
       const method = (this.__scsmMethod || '').toUpperCase();
       const url = this.__scsmUrl || '';
 
-      if (typeof url === 'string' && url.includes('api-v2.soundcloud.com/playlists')) {
+      if (url.includes('api-v2.soundcloud.com/playlists')) {
         const idMatch = url.match(PLAYLIST_ID_RE);
 
         if (method === 'PUT' && idMatch) {
