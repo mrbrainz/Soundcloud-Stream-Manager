@@ -15,7 +15,7 @@
 
   let enabled = false;
   let crawlPromise = null;
-  let xhrPatched = false;
+  let syncListenerInstalled = false;
 
   // Local bookkeeping of playlist -> track id membership, used only to
   // diff PUT bodies against their previous state and to recompute a
@@ -93,10 +93,12 @@
   // Confirmed live (see the reference script): adding/removing a track is
   // PUT /playlists/{id} with the FULL new track id list, not a single
   // add/remove op. Creation is POST /playlists (no id suffix); deletion is
-  // DELETE /playlists/{id}.
-  const PLAYLIST_ID_RE = /\/playlists\/(\d+)(?:\?|$)/;
-  const PLAYLIST_CREATE_RE = /\/playlists\/?(?:\?|$)/;
-
+  // DELETE /playlists/{id}. The actual XHR interception lives in
+  // content/mainWorldBridge.js (#61) - it has to run in the MAIN world to
+  // see SoundCloud's own XHR calls at all, and bridges the parsed result
+  // here via a 'scsm:playlist-sync' CustomEvent (installSyncListener,
+  // below) since only this isolated-world script has chrome.storage access
+  // to actually update the cache.
   function membershipFor(trackId) {
     const memberships = [];
     for (const [pid, pdata] of Object.entries(knownPlaylists)) {
@@ -136,73 +138,18 @@
     window.SCSMDom.rescan();
   }
 
-  function patchXHR() {
-    const OrigXHR = window.XMLHttpRequest;
-    const origOpen = OrigXHR.prototype.open;
-    const origSend = OrigXHR.prototype.send;
-
-    OrigXHR.prototype.open = function (method, url, ...rest) {
-      this.__scsmMethod = method;
-      // Normalize to a string HERE, not at read time: modern app code can
-      // legally pass a URL object (or anything with a sane toString()) to
-      // .open() instead of a plain string, browsers accept it natively.
-      // Confirmed live (#33) that live-checking `typeof url === 'string'`
-      // later silently dropped interception with zero errors when this
-      // happened - matches the reported symptom exactly (a request that
-      // demonstrably matches everything patchXHR expects, on a confirmed
-      // XHR call, that still never triggered sync).
-      try {
-        this.__scsmUrl = typeof url === 'string' ? url : String(url);
-      } catch (e) {
-        this.__scsmUrl = '';
+  // See content/mainWorldBridge.js (#61) for the actual XHR interception -
+  // this just reacts to what it publishes.
+  function installSyncListener() {
+    document.addEventListener('scsm:playlist-sync', (e) => {
+      const detail = e.detail;
+      if (!detail) return;
+      if (detail.type === 'put') {
+        applyPlaylistTrackIds(detail.playlistId, detail.trackIds, detail.title);
+      } else if (detail.type === 'delete') {
+        removePlaylistFromIndex(detail.playlistId);
       }
-      return origOpen.call(this, method, url, ...rest);
-    };
-
-    OrigXHR.prototype.send = function (body) {
-      const method = (this.__scsmMethod || '').toUpperCase();
-      const url = this.__scsmUrl || '';
-
-      if (url.includes('api-v2.soundcloud.com/playlists')) {
-        const idMatch = url.match(PLAYLIST_ID_RE);
-
-        if (method === 'PUT' && idMatch) {
-          const playlistId = Number(idMatch[1]);
-          this.addEventListener('load', () => {
-            if (this.status < 200 || this.status >= 300) return;
-            try {
-              const parsed = JSON.parse(body);
-              const trackIds = parsed && parsed.playlist && Array.isArray(parsed.playlist.tracks) ? parsed.playlist.tracks : null;
-              if (trackIds) applyPlaylistTrackIds(playlistId, trackIds);
-            } catch (e) {
-              console.warn('[SCSM playlist membership] could not parse PUT body for sync', e);
-            }
-          });
-        } else if (method === 'DELETE' && idMatch) {
-          const playlistId = Number(idMatch[1]);
-          this.addEventListener('load', () => {
-            if (this.status < 200 || this.status >= 300) return;
-            removePlaylistFromIndex(playlistId);
-          });
-        } else if (method === 'POST' && !idMatch && PLAYLIST_CREATE_RE.test(url)) {
-          this.addEventListener('load', () => {
-            if (this.status < 200 || this.status >= 300) return;
-            try {
-              const created = JSON.parse(this.responseText);
-              if (created && typeof created.id === 'number') {
-                const tracks = Array.isArray(created.tracks) ? created.tracks : [];
-                const trackIds = tracks.map((t) => t.id).filter((id) => typeof id === 'number');
-                applyPlaylistTrackIds(created.id, trackIds, created.title);
-              }
-            } catch (e) {
-              console.warn('[SCSM playlist membership] could not parse playlist-create response for sync', e);
-            }
-          });
-        }
-      }
-
-      return origSend.call(this, body);
-    };
+    });
   }
 
   // ---------- DOM annotation ----------
@@ -275,9 +222,9 @@
     document.querySelectorAll('.' + BADGE_CLASS).forEach((el) => el.remove());
   }
 
-  // The XHR patch and the crawl are both side effects nobody should pay for
-  // until something actually needs the membership data - install/run them
-  // lazily, once. Exposed via window.SCSMPlaylistMembership (below) so
+  // The sync listener and the crawl are both side effects nobody should pay
+  // for until something actually needs the membership data - install/run
+  // them lazily, once. Exposed via window.SCSMPlaylistMembership (below) so
   // hideInPlaylistTracks.js can trigger the same crawl independently of
   // this feature's own showPlaylistMembership (badge display) toggle - see
   // #52: the underlying data is a shared resource, and needing it
@@ -285,9 +232,9 @@
   // (both features enabling around the same time) share the one in-flight
   // crawl via crawlPromise instead of double-crawling.
   async function ensureCrawled() {
-    if (!xhrPatched) {
-      patchXHR();
-      xhrPatched = true;
+    if (!syncListenerInstalled) {
+      installSyncListener();
+      syncListenerInstalled = true;
     }
     if (!crawlPromise) {
       crawlPromise = crawlPlaylists();
