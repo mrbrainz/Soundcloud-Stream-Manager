@@ -51,7 +51,11 @@ window.__SCSM_MOCK_DATA__ = {
       created_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 hours ago
       duration: 180000, // 3:00
       downloadable: true,
-      download_url: 'https://api-v2.soundcloud.com/tracks/1004/download',
+      // NOTE: no download_url field here on purpose - live-verified (#38)
+      // that SoundCloud's real /resolve and /tracks responses never
+      // include one, even for a genuinely downloadable track. The actual
+      // signed link comes from the separate GET /tracks/{id}/download call
+      // mocked below via downloadRedirects.
       user: { username: "DJ O'Brien-Smith" },
     },
     // Already sits in "My Favourites" and "Techno 2026" per the playlists
@@ -111,4 +115,13 @@ window.__SCSM_MOCK_DATA__ = {
     { hydratable: 'apiClient', data: { id: 'mock-client-id-123' } },
     { hydratable: 'meUser', data: { id: 999 } },
   ],
+
+  // trackId -> signed redirect URL, for GET /tracks/{id}/download (see
+  // lib/api.js's getDownloadRedirectUrl). Live-verified (#38) that this
+  // real endpoint 401s without a real OAuth Authorization header -
+  // sc-api-mock.js's handler enforces the same thing, so a regression that
+  // drops the header from the real fetch call fails here too.
+  downloadRedirects: {
+    1004: 'https://cf-media.sndcdn.com/mock-signed-download-1004',
+  },
 };

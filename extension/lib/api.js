@@ -97,7 +97,6 @@
       createdAt: track.created_at || track.display_date || null,
       duration: typeof track.duration === 'number' ? track.duration : null,
       downloadable: !!track.downloadable,
-      downloadUrl: track.download_url || null,
       playlists: (cache[path] && cache[path].data.playlists) || pendingPlaylistsByTrackId[track.id] || [],
     };
     if (path) {
@@ -209,11 +208,36 @@
     return cachedEntry(path);
   }
 
+  // Resolves the actual signed download link for a track the API has
+  // already confirmed `downloadable`. NOT part of storeTrack()'s cached
+  // shape - live-verified (#38) that /resolve and /tracks/{id} no longer
+  // return a `download_url` field at all (SoundCloud dropped it), even for
+  // a genuinely downloadable track. The real link now only comes from this
+  // separate endpoint, which - also confirmed live - 401s under a plain
+  // client_id and requires the real OAuth Authorization header (resolving
+  // the "does this need OAuth" open question from #13's original PR: yes).
+  // Not cached long-term like the rest of the metadata, since a signed
+  // redirect URL is the kind of thing that can expire.
+  async function getDownloadRedirectUrl(trackId) {
+    return dedupe('download:' + trackId, async () => {
+      const clientId = window.SCSMAuth.getClientId();
+      if (!clientId) return null;
+      const res = await fetch(`${API_BASE}/tracks/${trackId}/download?client_id=${clientId}`, {
+        credentials: 'include',
+        headers: window.SCSMAuth.authHeaders(),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return (data && data.redirectUri) || null;
+    });
+  }
+
   window.SCSMApi = {
     resolveByPermalinkPath,
     getTrackById,
     getCachedByPermalinkPath,
     setPlaylistsForTrackId,
+    getDownloadRedirectUrl,
     permalinkPath,
   };
 })();

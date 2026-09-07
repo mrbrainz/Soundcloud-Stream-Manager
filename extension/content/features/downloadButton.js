@@ -2,37 +2,31 @@
 // shared icon row (lib/iconRow.js, same row searchLinks.js uses) for any
 // track the API confirms is downloadable - matching v1's behavior of only
 // showing the button when a check against the track's `downloadable` flag
-// says yes, rather than showing it unconditionally. See board card #13
+// says yes, rather than showing it unconditionally. See board card #13/#38
 // and docs/context.md.
 //
-// OPEN QUESTION carried over from planning, not resolved by the mock
-// harness (mocks always return whatever download_url the fixture data
-// says): v1 built the download URL as `download_url?client_id=...` -
-// needs live-verifying against real SoundCloud whether that still resolves
-// under a plain client_id for a non-owned track, or whether it now
-// requires the OAuth token too. If OAuth turns out to be required, a plain
-// link click can't carry an Authorization header - the fetch-to-blob
-// pattern (authenticated fetch, then a blob: URL) would be needed instead.
-// Flag this for the cross-page manual verification pass (#15).
+// Resolves the open question carried over from planning: live-verified
+// (#38) that SoundCloud no longer returns a `download_url` field from
+// /resolve or /tracks/{id} at all, even for a genuinely downloadable
+// track. The real link now comes from a separate call,
+// GET /tracks/{id}/download, which 401s under a plain client_id - it
+// needs the real OAuth Authorization header (lib/api.js's
+// getDownloadRedirectUrl() sends it via SCSMAuth.authHeaders()).
 (function () {
   'use strict';
 
   const BTN_CLASS = 'scsm-download-button';
   let enabled = false;
 
-  function renderButton(row, track) {
-    if (!track || !track.downloadable || !track.downloadUrl) return;
+  function renderButton(row, redirectUrl) {
     if (window.SCSMRowState.isMinimized(row)) return;
 
     const container = window.SCSMIconRow.getOrCreateIconRow(row);
     if (container.querySelector('.' + BTN_CLASS)) return; // idempotent
 
-    const clientId = window.SCSMAuth.getClientId();
-    if (!clientId) return;
-
     const link = document.createElement('a');
     link.className = BTN_CLASS;
-    link.href = track.downloadUrl + '?client_id=' + encodeURIComponent(clientId);
+    link.href = redirectUrl;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
     link.textContent = 'Download';
@@ -52,8 +46,11 @@
 
     const path = window.SCSMDom.permalinkPathFromHref(anchor.getAttribute('href'));
     const track = await window.SCSMApi.resolveByPermalinkPath(path);
-    if (!enabled) return;
-    renderButton(row, track); // no-ops on its own if the track isn't downloadable
+    if (!enabled || !track || !track.downloadable) return;
+
+    const redirectUrl = await window.SCSMApi.getDownloadRedirectUrl(track.id);
+    if (!enabled || !redirectUrl) return;
+    renderButton(row, redirectUrl);
   }
 
   function onDirty(dirtyNodes) {
