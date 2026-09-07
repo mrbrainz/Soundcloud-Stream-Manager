@@ -1,30 +1,52 @@
-# Soundcloud Stream Manager by Mr Brainz (http://djbrainz.com)
+# Soundcloud Stream Manager (SCSM) 2.0
 
-Make your SoundCloud stream usable with this simple Bookmarklet.
+A Chrome extension by [Mr Brainz](http://djbrainz.com) for pruning your SoundCloud
+stream in real time — hide the noise, keep the signal.
 
-Get it here: http://mrbrainz.github.io/Soundcloud-Stream-Manager
+This is a from-scratch Manifest V3 rebuild. The original SCSM was a bookmarklet
+that injected a floating panel onto `soundcloud.com` (see `git log` /
+[`references/`](references) for that history); it no longer worked against
+SoundCloud's current frontend and has been fully replaced by the extension in
+[`extension/`](extension).
 
+## Features
 
-Does your browser slow to a crawl when scrolling through
-your Soundcloud stream? Mine did. So I wrote this script.
+Toggle any of these from the extension's popup — every setting live-applies
+immediately, no page refresh needed:
 
-This bookmarklet enables you to do some cool things, like:
+- **Show repost age** — annotates "Reposted X ago" text with how old the
+  track's *original* upload actually is.
+- **Show playlist membership** — badges each track with which of your own
+  playlists already contain it.
+- **Hide tracks older than X days** — collapses any track (repost or
+  original upload) past a configurable age.
+- **Hide tracks longer than X minutes** — collapses anything past a
+  configurable length, e.g. to skip full mixes.
+- **Hide tracks already in a playlist** — collapses anything you've already
+  sorted into one of your own playlists.
+- **Hide tracks by genre** — collapses anything tagged with a genre on your
+  hidden list; hover a genre tag on any track for a one-click "hide this
+  genre" shortcut, no need to open the popup.
+- **Show search links** — adds one-click search links to Deezer, Apple
+  Music, Beatport, and Spotify for each track.
+- **Show legacy download button** — restores a direct download link for any
+  track SoundCloud itself allows downloading.
 
-* Remove Reposts from your stream
-* Remove tracks over a certain age (for pruning Repost Masturbators)
-* Remove tracks over a certain length for hiding mixes
-* Remove tracks before the one your looking at or listening to,
-  to help with browser performace
+A hidden track isn't removed — it collapses to a single summary line (title
++ why it was hidden) with a "show" link that restores it on demand.
 
-Magic.
+## Install (personal use)
 
+Not published to the Chrome Web Store — load it unpacked:
 
-Note - If you self-host, you may have security issues if you don't 
-host the script somewhere with SSL.
+1. Go to `chrome://extensions`.
+2. Enable "Developer mode" (top right).
+3. Click "Load unpacked" and select the [`extension/`](extension) folder.
+4. Visit [soundcloud.com](https://soundcloud.com) and open the extension's
+   popup from the toolbar to turn features on.
 
-Example Bookmarklet:
-
-```
-javascript:(function()%7Bvar rnd %3D Math.floor(Math.random()*9999999999)%3Bscrape%3Ddocument.createElement(%27SCRIPT%27)%3Bscrape.type%3D%27text/javascript%27%3Bscrape.id%3D%27nssc-script%27%3Bscrape.src%3D%27https://mrbrainz.github.io/Soundcloud-Stream-Manager/src/scsm-min.js%3F%27%2Brnd%3Bvar nsscs%3Ddocument.getElementById(%27nssc-script%27)%3Bif (nsscs %3D%3D null)%7Bdocument.getElementsByTagName(%27head%27)%5B0%5D.appendChild(scrape)%3B%3B%7D%7D)()%3B
-```
-
+See [`extension/README.md`](extension/README.md) for the extension's
+internal layout, and [`docs/context.md`](docs/context.md) for the full
+technical/working-context picture (architecture, terminology, the build
+workflow, and the active backlog on the
+[SCSM 2.0 board](https://github.com/users/mrbrainz/projects/2)).
