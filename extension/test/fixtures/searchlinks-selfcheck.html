@@ -44,6 +44,26 @@
       </li>
     </ul>
 
+    <!-- Live-verified (#82): a whole playlist embedded in the feed lists
+         its tracks with this compact soundBadge markup, not
+         li.soundList__item - no .soundActions nearby for the icon row to
+         attach next to. Search links must not render here at all. -->
+    <ul class="soundBadgeList" id="playlist-in-feed">
+      <li class="soundBadgeList__item">
+        <div class="soundBadge compact sc-media playlist">
+          <div class="soundBadge__content">
+            <div class="soundTitle">
+              <div class="soundTitle__titleContainer">
+                <div class="soundTitle__usernameTitleContainer">
+                  <a class="soundTitle__title" href="/testartist/genre-track">Genre Tagged Track</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </li>
+    </ul>
+
     <script src="/test/mocks/chrome-mock.js"></script>
     <script src="/test/mocks/data.js"></script>
     <script src="/test/mocks/sc-api-mock.js"></script>
@@ -83,6 +103,11 @@
         await wait(100);
 
         check('4 platform links are rendered', linksIn('row-dl').length, 4);
+        check(
+          'search links do not render on a playlist embedded in the feed (#82)',
+          document.querySelectorAll('#playlist-in-feed .scsm-search-link').length,
+          0
+        );
         const deezerLink = document.querySelector('#row-dl .scsm-search-link-deezer');
         // short-downloadable-track's artist is "DJ O'Brien-Smith" (mocks/data.js) -
         // punctuation should be stripped from the query.

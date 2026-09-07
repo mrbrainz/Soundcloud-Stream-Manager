@@ -43,6 +43,23 @@
     return !!(el.closest && el.closest(SIDEBAR_SELECTOR));
   }
 
+  // Live-verified (#82): a whole playlist embedded in the feed (a post or
+  // repost of a playlist, not a single track) lists its tracks with the
+  // SAME compact `.soundBadgeList__item`/`.soundBadge` markup the sidebar
+  // already used (#50) - not `.soundList__item` at all, and with no
+  // `.soundActions` row anywhere nearby. findRowForAnchor() had nothing
+  // better to fall back to than the anchor's own tiny title-container div,
+  // so getOrCreateIconRow() crammed the icon row into that cramped title
+  // line - rendering badly on the first track, and getting clipped
+  // entirely by that same narrow container's layout on the rest. The
+  // report asked to suppress this entirely rather than attempt to make it
+  // fit, so exclude it the same way the sidebar already is.
+  const COMPACT_BADGE_SELECTOR = '.soundBadgeList__item';
+
+  function isInCompactBadgeList(el) {
+    return !!(el.closest && el.closest(COMPACT_BADGE_SELECTOR));
+  }
+
   function isRelevantFrame() {
     return isTopFrame || STANDALONE_PATH_RE.test(location.pathname);
   }
@@ -58,15 +75,19 @@
     return location.pathname.replace(/^\/n(?=\/)/, '');
   }
 
+  function isExcludedFromScanning(el) {
+    return isInSidebar(el) || isInCompactBadgeList(el);
+  }
+
   function findTrackAnchors(root) {
     if (!root) return [];
     if (root.nodeType === Node.TEXT_NODE) root = root.parentElement;
     if (!root) return [];
     const results = [];
-    if (root.matches && root.matches('a.soundTitle__title[href]') && !isInSidebar(root)) results.push(root);
+    if (root.matches && root.matches('a.soundTitle__title[href]') && !isExcludedFromScanning(root)) results.push(root);
     if (root.querySelectorAll) {
       root.querySelectorAll('a.soundTitle__title[href]').forEach((el) => {
-        if (!isInSidebar(el)) results.push(el);
+        if (!isExcludedFromScanning(el)) results.push(el);
       });
     }
     return results;
@@ -136,12 +157,12 @@
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 
     // Deferred (not synchronous, and NOT a microtask): dom.js loads and
-    // runs boot() before content.js and any feature files after it in the
-    // manifest's script list have had a chance to call onScan(). A
-    // microtask (Promise.resolve().then) is NOT enough here - browsers
-    // flush the microtask queue after EACH classic <script> finishes
-    // executing, not just once all of them have run, so a microtask-deferred
-    // rescan() still fires before the next <script> tag (content.js) even
+    // runs boot() before any feature files after it in the manifest's
+    // script list have had a chance to call onScan(). A microtask
+    // (Promise.resolve().then) is NOT enough here - browsers flush the
+    // microtask queue after EACH classic <script> finishes executing, not
+    // just once all of them have run, so a microtask-deferred rescan()
+    // still fires before the next <script> tag (e.g. repostAge.js) even
     // starts. setTimeout schedules a macrotask instead, which only runs
     // after the whole synchronous script chain (and this task) completes.
     setTimeout(rescan, 0);
@@ -263,6 +284,7 @@
     findTrackAnchors,
     findRowForAnchor,
     isInSidebar,
+    isInCompactBadgeList,
     pageType,
     isPageTypeEnabled,
     onPageTypeChange,

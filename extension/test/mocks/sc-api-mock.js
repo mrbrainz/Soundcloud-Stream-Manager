@@ -39,14 +39,18 @@
     return key ? h[key] : null;
   }
 
-  function jsonResponse(body, status = 200) {
+  function jsonResponse(body, status = 200, extraHeaders) {
     return Promise.resolve(
       new Response(JSON.stringify(body), {
         status,
-        headers: { 'Content-Type': 'application/json' },
+        headers: Object.assign({ 'Content-Type': 'application/json' }, extraHeaders),
       })
     );
   }
+
+  // #87 regression: how many times each RATE_LIMITED_ONCE track's /download
+  // has been requested this page life - 429s the first time, then succeeds.
+  const rateLimitedOnceCallCounts = {};
 
   // ---- fetch interception ----
   // Anything NOT aimed at api-v2.soundcloud.com falls through to the real
@@ -86,6 +90,32 @@
       if (!authHeader) return jsonResponse({ error: 'mock: needs a real OAuth Authorization header' }, 401);
       const id = Number(downloadMatch[1]);
       const redirectUri = DATA.downloadRedirects && DATA.downloadRedirects[id];
+      // #85 regression: simulates the live-observed case of SoundCloud's
+      // API leaving a request permanently pending (no response at all,
+      // ever) - never resolves on its own, only reacts to the caller's
+      // AbortSignal, exactly like a real hung fetch() would.
+      if (redirectUri === 'HANG_FOREVER') {
+        return new Promise((resolve, reject) => {
+          const signal = init && init.signal;
+          if (!signal) return; // never settles
+          if (signal.aborted) {
+            reject(new DOMException('Aborted', 'AbortError'));
+            return;
+          }
+          signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+        });
+      }
+      // #87 regression: simulates the live-observed case of a valid
+      // client_id AND a valid OAuth header still getting a 429 - a
+      // transient, retryable rate limit, not a real "not found"/auth
+      // failure. 429s exactly once per track id, then succeeds.
+      if (redirectUri === 'RATE_LIMITED_ONCE') {
+        rateLimitedOnceCallCounts[id] = (rateLimitedOnceCallCounts[id] || 0) + 1;
+        if (rateLimitedOnceCallCounts[id] === 1) {
+          return jsonResponse({ error: 'mock: rate limited' }, 429);
+        }
+        return jsonResponse({ redirectUri: `https://cf-media.sndcdn.com/mock-signed-download-${id}` });
+      }
       if (redirectUri) return jsonResponse({ redirectUri });
       return jsonResponse({ error: 'mock: no download redirect for track id ' + id }, 401);
     }
@@ -124,6 +154,12 @@
     results.push(['playlists page', playlistsRes.ok]);
 
     for (const idStr of Object.keys(DATA.downloadRedirects || {})) {
+      // HANG_FOREVER (#85) never settles without an AbortSignal, and
+      // RATE_LIMITED_ONCE (#87) 429s on its first call - consuming that
+      // here would break the dedicated regression tests' own first-call
+      // assumption. Both are exercised directly by api-selfcheck.html
+      // instead of this reachability self-test.
+      if (DATA.downloadRedirects[idStr] === 'HANG_FOREVER' || DATA.downloadRedirects[idStr] === 'RATE_LIMITED_ONCE') continue;
       const res = await window.fetch(`https://api-v2.soundcloud.com/tracks/${idStr}/download?client_id=x`, {
         headers: { Authorization: 'OAuth mock-oauth-token' },
       });

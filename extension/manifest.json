@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Soundcloud Stream Manager",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Manage your SoundCloud stream: repost age, playlist membership, hide old/long tracks, cross-platform search links, legacy downloads.",
   "action": {
     "default_popup": "popup/popup.html",
@@ -41,7 +41,6 @@
         "lib/dom.js",
         "lib/rowState.js",
         "lib/iconRow.js",
-        "content/content.js",
         "content/features/repostAge.js",
         "content/features/hideOldTracks.js",
         "content/features/hideLongTracks.js",

@@ -27,6 +27,14 @@
     <script src="/content/mainWorldBridge.js"></script>
     <script src="/lib/settings.js"></script>
     <script src="/lib/auth.js"></script>
+    <script>
+      // #85 regression: shrink the fetch timeout from its real 15s to
+      // something a test suite can actually wait out.
+      window.__SCSM_TEST_FETCH_TIMEOUT_MS = 300;
+      // #87 regression: shrink the retry backoff from its real 1s+ to
+      // something a test suite can actually wait out.
+      window.__SCSM_TEST_RETRY_DELAY_MS = 50;
+    </script>
     <script src="/lib/api.js"></script>
     <script>
       (async function () {
@@ -138,6 +146,61 @@
         check('a pending track has no cache entry yet', notYetCached, null);
         const resolved = await window.SCSMApi.resolveByPermalinkPath('/testartist/recent-repost-track');
         check('resolving picks up the pending playlists', resolved.playlists, [{ id: 5002, title: 'Techno 2026' }]);
+
+        // ---- #83: a resolve started before client_id is ready WAITS for it, instead of failing permanently ----
+        // Reproduces the actual live bug: content/mainWorldBridge.js
+        // bridges client_id from window.__sc_hydration asynchronously (it
+        // polls up to 30x100ms), and a feature's very first rescan() at
+        // document_idle can race ahead of that on a slow/cold page load.
+        // Before this fix, resolveByPermalinkPath() checked getClientId()
+        // once, synchronously, and gave up for good if it wasn't there yet
+        // - downloadButton.js (which renders NOTHING unless its resolve
+        // succeeds) could end up showing no button at all until some later
+        // event re-triggered a resolve, matching the reported "needs a
+        // toggle off/on to appear."
+        const originalClientId = document.documentElement.dataset.scsmClientId;
+        delete document.documentElement.dataset.scsmClientId;
+        const genreTrackPromise = window.SCSMApi.resolveByPermalinkPath('/testartist/genre-track');
+        await new Promise((resolve) => setTimeout(resolve, 250)); // well past one 100ms poll tick, well short of the 20-tick ceiling
+        document.documentElement.dataset.scsmClientId = originalClientId; // simulates mainWorldBridge.js finally publishing it
+        const genreTrack = await genreTrackPromise;
+        check('a resolve started with no client_id yet still succeeds once one appears, instead of returning null', genreTrack && genreTrack.id, 1007);
+
+        // ---- #85: a request that never settles times out and frees its queue slot, instead of wedging every other call forever ----
+        // Live-verified: SoundCloud's /tracks/{id}/download left a request
+        // permanently pending (no response, ever). Since resolveByPermalinkPath/
+        // getTrackById/getDownloadRedirectUrl all share ONE MAX_CONCURRENT=3
+        // queue, 3 such requests would occupy every slot forever and nothing
+        // queued behind them - for ANY feature - would ever run. Fill all 3
+        // slots with hanging requests, then queue one more (normal, working)
+        // call behind them: without the fetch timeout, that 4th call would
+        // never even start.
+        const hangs = [
+          window.SCSMApi.getDownloadRedirectUrl(1009),
+          window.SCSMApi.getDownloadRedirectUrl(1010),
+          window.SCSMApi.getDownloadRedirectUrl(1011),
+        ];
+        const queuedBehindThem = window.SCSMApi.getDownloadRedirectUrl(1004);
+        const [hangResults, queuedResult] = await Promise.all([Promise.all(hangs), queuedBehindThem]);
+        check('a request that never settles times out to null instead of hanging the caller forever', hangResults, [null, null, null]);
+        check(
+          'a normal request queued behind 3 hung ones still completes once they time out and free their slots',
+          queuedResult,
+          'https://cf-media.sndcdn.com/mock-signed-download-1004'
+        );
+
+        // ---- #87: a 429 is retried instead of being treated as a permanent failure ----
+        // Live-verified: a request with a valid client_id AND a valid OAuth
+        // header still got a 429 from SoundCloud's own rate limiting - a
+        // transient, retryable condition that `if (!res.ok) return null`
+        // used to treat exactly like a genuine 404/401, permanently giving
+        // up on a track that WAS actually downloadable.
+        const rateLimited = await window.SCSMApi.getDownloadRedirectUrl(1012);
+        check(
+          'a 429 is retried and eventually succeeds, instead of giving up on the first attempt',
+          rateLimited,
+          'https://cf-media.sndcdn.com/mock-signed-download-1012'
+        );
 
         out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
         out.className = failures === 0 ? 'pass' : 'fail';

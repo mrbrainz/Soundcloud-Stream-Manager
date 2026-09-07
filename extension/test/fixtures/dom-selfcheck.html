@@ -37,6 +37,27 @@
       </ul>
     </div>
 
+    <!-- Live-verified (#82): a whole playlist embedded in the MAIN feed
+         (a post/repost of a playlist, not the sidebar) lists its tracks
+         with this same compact soundBadge markup - no .soundActions
+         anywhere nearby, so a feature's icon row had nowhere sensible to
+         attach and got crammed into the tiny title-container div instead. -->
+    <ul class="soundBadgeList" id="playlist-in-feed">
+      <li class="soundBadgeList__item">
+        <div class="soundBadge compact sc-media playlist">
+          <div class="soundBadge__content">
+            <div class="soundTitle">
+              <div class="soundTitle__titleContainer">
+                <div class="soundTitle__usernameTitleContainer">
+                  <a class="soundTitle__title" href="/testartist/genre-track">Genre Tagged Track</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </li>
+    </ul>
+
     <script src="/test/mocks/chrome-mock.js"></script>
     <script src="/test/mocks/data.js"></script>
     <script src="/test/mocks/sc-api-mock.js"></script>
@@ -69,7 +90,11 @@
 
         // ---- static row matching ----
         const anchors = window.SCSMDom.findTrackAnchors(document.body);
-        check('findTrackAnchors finds only the 3 main-stream rows, not the sidebar one', anchors.length, 3);
+        check(
+          'findTrackAnchors finds only the 3 main-stream rows, not the sidebar one or the playlist-in-feed one',
+          anchors.length,
+          3
+        );
         check(
           'permalinkPathFromHref resolves each anchor correctly',
           anchors.map((a) => window.SCSMDom.permalinkPathFromHref(a.getAttribute('href'))),
@@ -83,6 +108,21 @@
         check(
           'findTrackAnchors(sidebar) directly returns nothing',
           window.SCSMDom.findTrackAnchors(document.getElementById('sidebar')).length,
+          0
+        );
+
+        // ---- playlist-in-feed exclusion (#82) ----
+        const playlistInFeedAnchor = document.querySelector('#playlist-in-feed a.soundTitle__title');
+        check(
+          'isInCompactBadgeList is true for a .soundBadgeList__item anchor, even outside the sidebar',
+          window.SCSMDom.isInCompactBadgeList(playlistInFeedAnchor),
+          true
+        );
+        check('isInSidebar is false for the playlist-in-feed anchor (it is not in the sidebar)', window.SCSMDom.isInSidebar(playlistInFeedAnchor), false);
+        check('isInCompactBadgeList is false for a main-stream anchor', window.SCSMDom.isInCompactBadgeList(anchors[0]), false);
+        check(
+          'findTrackAnchors(playlist-in-feed) directly returns nothing',
+          window.SCSMDom.findTrackAnchors(document.getElementById('playlist-in-feed')).length,
           0
         );
 

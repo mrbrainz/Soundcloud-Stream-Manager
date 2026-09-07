@@ -173,16 +173,88 @@
     return p;
   }
 
+  // content/mainWorldBridge.js bridges client_id from the page's own
+  // window.__sc_hydration asynchronously (it may not be set yet at
+  // document_start, so that file polls up to 30x100ms) - lib/auth.js's
+  // getClientId() just reads whatever's on the DOM right now, synchronously,
+  // with no memory of "it's not there YET" vs "it's never coming." Every
+  // feature's very first rescan() (triggered as soon as its own setting is
+  // read, at document_idle - which can still race ahead of that bridge on a
+  // slow/cold page load) used to hit this and simply give up for that
+  // resolve attempt, with nothing ever retrying it: a feature relying on a
+  // one-shot resolveByPermalinkPath()/getTrackById() succeeding to render
+  // anything at all (e.g. downloadButton.js's confirmed-downloadable check)
+  // could end up rendering NOTHING on initial load, only recovering once
+  // some later event (a toggle off/on, another rescan) happened to fire
+  // after the bridge had caught up - live-verified as the actual cause of
+  // "the download button needs a toggle off/on to appear" (#83). Wait for
+  // it here, once, shared by every caller below, instead of each one
+  // re-implementing its own "maybe try again later."
+  async function waitForClientId() {
+    for (let i = 0; i < 20; i++) {
+      const id = window.SCSMAuth.getClientId();
+      if (id) return id;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    return null;
+  }
+
+  // resolveByPermalinkPath/getTrackById/getDownloadRedirectUrl all funnel
+  // through the SAME MAX_CONCURRENT-limited queue above - live-verified
+  // (#85) that SoundCloud's API can leave a request permanently pending
+  // (never resolving, never rejecting, no HTTP response at all - looked
+  // like anti-bot throttling under the bursty concurrent-resolve pattern
+  // every feature's initial rescan produces). A plain fetch() has no
+  // built-in timeout, so a single stuck request would occupy one of only
+  // 3 concurrency slots FOREVER, and everything queued behind it - across
+  // every feature - would simply never run. Abort and free the slot
+  // instead, treating it the same as any other failed request.
+  // Overridable by test fixtures (set window.__SCSM_TEST_FETCH_TIMEOUT_MS
+  // before this file loads) so a regression test can prove the timeout
+  // actually frees a wedged queue slot without a real 15s wait.
+  const FETCH_TIMEOUT_MS = window.__SCSM_TEST_FETCH_TIMEOUT_MS || 15000;
+  function fetchWithTimeout(url, options) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
+  }
+
+  // Live-verified (#87): a single burst of concurrent resolves across every
+  // feature's initial rescan is enough to trip SoundCloud's own rate
+  // limiting - a 429 with a valid client_id AND a valid OAuth header, not
+  // an auth problem. Before this, `if (!res.ok) return null` treated a
+  // transient, retryable 429/503 exactly the same as a genuine 404 "this
+  // track doesn't exist" - one rate-limited moment early in a session could
+  // permanently blank out a feature (e.g. downloadButton.js never showing a
+  // button for a track that IS downloadable) with no retry, ever. Respects
+  // Retry-After when the server sends one; otherwise backs off
+  // exponentially. Overridable in tests (window.__SCSM_TEST_RETRY_DELAY_MS)
+  // so a regression test doesn't have to sit through a real multi-second
+  // backoff.
+  const MAX_RETRIES = 2;
+  const RETRY_BASE_DELAY_MS = window.__SCSM_TEST_RETRY_DELAY_MS || 1000;
+  async function fetchWithRetry(url, options) {
+    for (let attempt = 0; ; attempt++) {
+      const res = await fetchWithTimeout(url, options);
+      if ((res.status !== 429 && res.status !== 503) || attempt >= MAX_RETRIES) return res;
+      const retryAfterSeconds = Number(res.headers.get('Retry-After'));
+      const delay = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+        ? retryAfterSeconds * 1000
+        : RETRY_BASE_DELAY_MS * Math.pow(2, attempt);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+
   async function resolveByPermalinkPath(path) {
     await load();
     const cached = cachedEntry(path);
     if (cached) return cached;
 
     return dedupe('resolve:' + path, async () => {
-      const clientId = window.SCSMAuth.getClientId();
+      const clientId = await waitForClientId();
       if (!clientId) return null;
       const url = 'https://soundcloud.com' + path;
-      const res = await fetch(`${API_BASE}/resolve?url=${encodeURIComponent(url)}&client_id=${clientId}`, {
+      const res = await fetchWithRetry(`${API_BASE}/resolve?url=${encodeURIComponent(url)}&client_id=${clientId}`, {
         credentials: 'omit',
       });
       if (!res.ok) return null;
@@ -200,9 +272,9 @@
     }
 
     return dedupe('id:' + id, async () => {
-      const clientId = window.SCSMAuth.getClientId();
+      const clientId = await waitForClientId();
       if (!clientId) return null;
-      const res = await fetch(`${API_BASE}/tracks/${id}?client_id=${clientId}&app_locale=en`, {
+      const res = await fetchWithRetry(`${API_BASE}/tracks/${id}?client_id=${clientId}&app_locale=en`, {
         credentials: 'include',
         headers: window.SCSMAuth.authHeaders(),
       });
@@ -248,9 +320,9 @@
   // redirect URL is the kind of thing that can expire.
   async function getDownloadRedirectUrl(trackId) {
     return dedupe('download:' + trackId, async () => {
-      const clientId = window.SCSMAuth.getClientId();
+      const clientId = await waitForClientId();
       if (!clientId) return null;
-      const res = await fetch(`${API_BASE}/tracks/${trackId}/download?client_id=${clientId}`, {
+      const res = await fetchWithRetry(`${API_BASE}/tracks/${trackId}/download?client_id=${clientId}`, {
         credentials: 'include',
         headers: window.SCSMAuth.authHeaders(),
       });
