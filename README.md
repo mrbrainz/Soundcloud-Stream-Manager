@@ -39,11 +39,17 @@ A hidden track isn't removed — it collapses to a single summary line (title
 
 Not published to the Chrome Web Store — load it unpacked:
 
-1. Go to `chrome://extensions`.
-2. Enable "Developer mode" (top right).
-3. Click "Load unpacked" and select the [`extension/`](extension) folder.
-4. Visit [soundcloud.com](https://soundcloud.com) and open the extension's
+1. Download the latest release from the
+   [Releases tab](https://github.com/mrbrainz/Soundcloud-Stream-Manager/releases/latest)
+   and unzip it.
+2. Go to `chrome://extensions`.
+3. Enable "Developer mode" (top right).
+4. Click "Load unpacked" and select the unzipped folder.
+5. Visit [soundcloud.com](https://soundcloud.com) and open the extension's
    popup from the toolbar to turn features on.
+
+Building from a clone instead of a release zip? Select the
+[`extension/`](extension) folder in step 4 instead.
 
 See [`extension/README.md`](extension/README.md) for the extension's
 internal layout, and [`docs/context.md`](docs/context.md) for the full
