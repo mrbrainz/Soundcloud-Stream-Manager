@@ -31,6 +31,9 @@
       // #85 regression: shrink the fetch timeout from its real 15s to
       // something a test suite can actually wait out.
       window.__SCSM_TEST_FETCH_TIMEOUT_MS = 300;
+      // #87 regression: shrink the retry backoff from its real 1s+ to
+      // something a test suite can actually wait out.
+      window.__SCSM_TEST_RETRY_DELAY_MS = 50;
     </script>
     <script src="/lib/api.js"></script>
     <script>
@@ -184,6 +187,19 @@
           'a normal request queued behind 3 hung ones still completes once they time out and free their slots',
           queuedResult,
           'https://cf-media.sndcdn.com/mock-signed-download-1004'
+        );
+
+        // ---- #87: a 429 is retried instead of being treated as a permanent failure ----
+        // Live-verified: a request with a valid client_id AND a valid OAuth
+        // header still got a 429 from SoundCloud's own rate limiting - a
+        // transient, retryable condition that `if (!res.ok) return null`
+        // used to treat exactly like a genuine 404/401, permanently giving
+        // up on a track that WAS actually downloadable.
+        const rateLimited = await window.SCSMApi.getDownloadRedirectUrl(1012);
+        check(
+          'a 429 is retried and eventually succeeds, instead of giving up on the first attempt',
+          rateLimited,
+          'https://cf-media.sndcdn.com/mock-signed-download-1012'
         );
 
         out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;

@@ -139,6 +139,18 @@ window.__SCSM_MOCK_DATA__ = {
       downloadable: true,
       user: { username: 'Test Artist' },
     },
+    // Downloadable, whose /download redirect 429s exactly once before
+    // succeeding (#87's regression test).
+    '/testartist/rate-limited-once-track': {
+      id: 1012,
+      kind: 'track',
+      title: 'Rate Limited Once Track',
+      permalink_url: 'https://soundcloud.com/testartist/rate-limited-once-track',
+      created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+      duration: 170000,
+      downloadable: true,
+      user: { username: 'Test Artist' },
+    },
     // A label/aggregator upload: the account is NOT the real artist. Real
     // example confirmed live (see #36): soundcloud.com/nawtyrecords posts
     // as "Nawty Records" but publisher_metadata.artist is "Neumonic".
@@ -200,6 +212,7 @@ window.__SCSM_MOCK_DATA__ = {
     1008: 'https://cf-media.sndcdn.com/mock-signed-download-1008',
     1009: 'HANG_FOREVER',
     1010: 'HANG_FOREVER',
+    1012: 'RATE_LIMITED_ONCE',
     1011: 'HANG_FOREVER',
   },
 };
