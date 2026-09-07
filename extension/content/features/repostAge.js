@@ -151,7 +151,7 @@
   }
 
   function applySetting(settings) {
-    const shouldEnable = !!settings.showRepostAge;
+    const shouldEnable = !!settings.showRepostAge && window.SCSMDom.isPageTypeEnabled(settings);
     if (shouldEnable === enabled) return;
     enabled = shouldEnable;
     if (enabled) {

@@ -59,7 +59,7 @@
   }
 
   async function applySetting(settings) {
-    const shouldEnable = !!settings.hideTracksInPlaylist;
+    const shouldEnable = !!settings.hideTracksInPlaylist && window.SCSMDom.isPageTypeEnabled(settings);
     if (shouldEnable === enabled) return;
 
     if (!shouldEnable) {

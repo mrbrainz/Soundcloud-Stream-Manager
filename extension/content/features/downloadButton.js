@@ -62,7 +62,7 @@
   }
 
   function applySetting(settings) {
-    const shouldEnable = !!settings.showDownloadButton;
+    const shouldEnable = !!settings.showDownloadButton && window.SCSMDom.isPageTypeEnabled(settings);
     if (shouldEnable === enabled) return;
     enabled = shouldEnable;
     if (enabled) {

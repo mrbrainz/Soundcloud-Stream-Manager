@@ -70,7 +70,7 @@
   }
 
   function applySetting(settings) {
-    const shouldEnable = !!settings.hideLongTracks;
+    const shouldEnable = !!settings.hideLongTracks && window.SCSMDom.isPageTypeEnabled(settings);
     const thresholdChanged = settings.hideLongTracksMinutes !== thresholdMinutes;
     thresholdMinutes = settings.hideLongTracksMinutes;
 

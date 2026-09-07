@@ -243,7 +243,7 @@
   }
 
   async function applySetting(settings) {
-    const shouldEnable = !!settings.showPlaylistMembership;
+    const shouldEnable = !!settings.showPlaylistMembership && window.SCSMDom.isPageTypeEnabled(settings);
     if (shouldEnable === enabled) return;
     enabled = shouldEnable;
 

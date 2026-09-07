@@ -93,7 +93,7 @@
   }
 
   function applySetting(settings) {
-    const shouldEnable = !!settings.showSearchLinks;
+    const shouldEnable = !!settings.showSearchLinks && window.SCSMDom.isPageTypeEnabled(settings);
     if (shouldEnable === enabled) return;
     enabled = shouldEnable;
     if (enabled) {

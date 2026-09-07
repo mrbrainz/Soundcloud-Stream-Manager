@@ -20,6 +20,10 @@
     hideOldTracks: 'hideOldTracksDays',
     hideLongTracks: 'hideLongTracksMinutes',
   };
+  // #65's page-type scope chips - separate from TOGGLE_IDS since they
+  // write into ONE array setting (enabledPageTypes) rather than each
+  // having their own boolean key.
+  const PAGE_TYPES = ['feed', 'discover', 'track', 'profile', 'playlist'];
 
   function applyToForm(settings) {
     TOGGLE_IDS.forEach((id) => {
@@ -38,6 +42,13 @@
       thresholdEl.classList.toggle('threshold--inactive', !settings[toggleId]);
     });
     renderGenreChips(settings.hiddenGenres);
+
+    const enabledPageTypes = Array.isArray(settings.enabledPageTypes) ? settings.enabledPageTypes : PAGE_TYPES;
+    PAGE_TYPES.forEach((type) => {
+      const el = document.getElementById('pageType-' + type);
+      const shouldBeChecked = enabledPageTypes.includes(type);
+      if (el && el.checked !== shouldBeChecked) el.checked = shouldBeChecked;
+    });
   }
 
   // The hidden-genres chip list is fully derived from settings - re-render
@@ -120,6 +131,17 @@
         if (Number.isFinite(n) && n > 0) {
           window.SCSMSettings.set({ [id]: n });
         }
+      });
+    });
+
+    PAGE_TYPES.forEach((type) => {
+      const el = document.getElementById('pageType-' + type);
+      if (!el) return;
+      el.addEventListener('change', async () => {
+        const current = await window.SCSMSettings.get();
+        const existing = Array.isArray(current.enabledPageTypes) ? current.enabledPageTypes : PAGE_TYPES;
+        const next = el.checked ? [...new Set([...existing, type])] : existing.filter((t) => t !== type);
+        window.SCSMSettings.set({ enabledPageTypes: next });
       });
     });
 
