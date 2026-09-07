@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Soundcloud Stream Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Baloo+2:wght@500;700;800&family=Space+Mono:wght@400;700&display=swap">
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <div class="popup">
+      <header class="pop-head">
+        <div class="titleblock" id="titleblock">
+          <h1 class="brand">SCSM 💀</h1>
+          <div class="tagline">stream manager but it's <span class="heart">unhinged</span> fr fr</div>
+        </div>
+      </header>
+
+      <div class="rows">
+        <div class="row">
+          <div class="emoji">⏰</div>
+          <div class="row-text">
+            <label class="row-title" for="showRepostAge">repost age check</label>
+            <div class="row-sub">see how <span class="val">stale</span> that repost really is</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="showRepostAge"><span class="knob"></span></label>
+        </div>
+
+        <div class="row">
+          <div class="emoji">📂</div>
+          <div class="row-text">
+            <label class="row-title" for="showPlaylistMembership">playlist receipts</label>
+            <div class="row-sub">shows which playlists got the track, no cap</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="showPlaylistMembership"><span class="knob"></span></label>
+        </div>
+
+        <div class="row">
+          <div class="emoji">🧟</div>
+          <div class="row-text">
+            <label class="row-title" for="hideOldTracks">delete the ancient ones</label>
+            <div class="row-sub">hide anything older than this, it's mid</div>
+            <div class="stepper"><input type="number" id="hideOldTracksDays" class="threshold" min="1"> <span>days deep</span></div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="hideOldTracks"><span class="knob"></span></label>
+        </div>
+
+        <div class="row">
+          <div class="emoji">😴</div>
+          <div class="row-text">
+            <label class="row-title" for="hideLongTracks">no snooze tracks</label>
+            <div class="row-sub">skip anything past this, we ain't got time</div>
+            <div class="stepper"><input type="number" id="hideLongTracksMinutes" class="threshold" min="1"> <span>min cap</span></div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="hideLongTracks"><span class="knob"></span></label>
+        </div>
+
+        <div class="row">
+          <div class="emoji">📦</div>
+          <div class="row-text">
+            <label class="row-title" for="hideTracksInPlaylist">already got it</label>
+            <div class="row-sub">hide tracks you already stashed in a playlist</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="hideTracksInPlaylist"><span class="knob"></span></label>
+        </div>
+
+        <div class="row">
+          <div class="emoji">🚫</div>
+          <div class="row-text">
+            <label class="row-title" for="hideGenres">not the vibe</label>
+            <div class="row-sub">hide anything tagged with a genre below</div>
+            <div class="genre-input-row">
+              <input type="text" id="hiddenGenreInput" class="genre-input" placeholder="e.g. Techno">
+              <button type="button" id="hiddenGenreAdd" class="genre-add-btn">add</button>
+            </div>
+            <div class="genre-chips" id="hiddenGenreChips"></div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="hideGenres"><span class="knob"></span></label>
+        </div>
+
+        <div class="row">
+          <div class="emoji">🔍</div>
+          <div class="row-text">
+            <label class="row-title" for="showSearchLinks">find it everywhere</label>
+            <div class="row-sub">one click to every platform, secure the bag</div>
+            <div class="searchlinks">
+              <span class="chip">deezer</span>
+              <span class="chip">apple music</span>
+              <span class="chip">beatport</span>
+              <span class="chip">spotify</span>
+            </div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="showSearchLinks"><span class="knob"></span></label>
+        </div>
+
+        <div class="row">
+          <div class="emoji">⬇️</div>
+          <div class="row-text">
+            <label class="row-title" for="showDownloadButton">yoink button <span class="badge">legacy</span></label>
+            <div class="row-sub">bring back the old download btn, ok boomer mode</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="showDownloadButton"><span class="knob"></span></label>
+        </div>
+      </div>
+
+      <footer class="pop-foot">
+        <span>v2.0 &middot; saves instantly</span>
+      </footer>
+    </div>
+
+    <img id="hoverEasterEgg" class="hover-easter-egg" src="images/fellow-kids.webp" alt="" hidden>
+
+    <script src="../lib/settings.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

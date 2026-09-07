@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "scsm-mock-fixtures",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["extension/test/no-cache-server.py", "8766", "extension"],
+      "port": 8766
+    },
+    {
+      "name": "scsm-gh-pages",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["extension/test/no-cache-server.py", "8767", "."],
+      "port": 8767
+    }
+  ]
+}

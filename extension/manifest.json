@@ -1,0 +1,53 @@
+{
+  "manifest_version": 3,
+  "name": "Soundcloud Stream Manager",
+  "version": "2.0.0",
+  "description": "Manage your SoundCloud stream: repost age, playlist membership, hide old/long tracks, cross-platform search links, legacy downloads.",
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": ["storage"],
+  "host_permissions": ["https://soundcloud.com/*", "https://api-v2.soundcloud.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://soundcloud.com/*"],
+      "js": ["content/mainWorldBridge.js"],
+      "world": "MAIN",
+      "run_at": "document_start",
+      "all_frames": true
+    },
+    {
+      "matches": ["https://soundcloud.com/*"],
+      "js": [
+        "lib/settings.js",
+        "lib/auth.js",
+        "lib/api.js",
+        "lib/dom.js",
+        "lib/rowState.js",
+        "lib/iconRow.js",
+        "content/content.js",
+        "content/features/repostAge.js",
+        "content/features/hideOldTracks.js",
+        "content/features/hideLongTracks.js",
+        "content/features/searchLinks.js",
+        "content/features/downloadButton.js",
+        "content/features/playlistMembership.js",
+        "content/features/hideInPlaylistTracks.js",
+        "content/features/hideGenreTracks.js",
+        "content/features/hoverAddGenre.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ]
+}

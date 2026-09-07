@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SCSM mock fixture — standalone track/playlist page shape</title>
+    <style>
+      body { font-family: sans-serif; max-width: 640px; margin: 24px auto; }
+      .fixture-note { color: #888; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <p class="fixture-note">
+      Simulates the standalone <code>soundcloud.com/artist/track</code> page,
+      which SoundCloud renders inside a same-origin <code>webiIframe</code>
+      with a plain <code>&lt;h1&gt;</code> and no
+      <code>a.soundTitle__title</code> anchors — see
+      <a href="../README.md">test/README.md</a>. The URL bar is rewritten via
+      <code>history.replaceState</code> below so <code>location.pathname</code>
+      reports the fixture's permalink even though this is served locally.
+      <br />Open devtools console — the mocks self-test and a small lib/dom.js
+      assertion block both run on load.
+    </p>
+
+    <h1>In Playlist Track</h1>
+    <div id="dom-results" style="font-family: monospace; white-space: pre-wrap;"></div>
+
+    <script>
+      // Real content-script code (see references/*.user.js) reads
+      // location.pathname as the permalink on this page shape - rewrite it
+      // to a fixture path BEFORE the mocks/content script run, without an
+      // actual cross-origin navigation.
+      //
+      // NOTE: replaceState also changes the base URL used to resolve any
+      // *relative* script src that follows - the scripts below use
+      // absolute (server-root-relative) paths specifically to avoid that,
+      // since a relative "../mocks/..." would otherwise resolve against
+      // the new fake path instead of this file's real location.
+      history.replaceState(null, '', '/testartist/in-playlist-track');
+    </script>
+    <script src="/test/mocks/chrome-mock.js"></script>
+    <script src="/test/mocks/data.js"></script>
+    <script src="/test/mocks/sc-api-mock.js"></script>
+    <script src="/content/mainWorldBridge.js"></script>
+    <script src="/lib/settings.js"></script>
+    <script src="/lib/auth.js"></script>
+    <script src="/lib/api.js"></script>
+    <script src="/lib/dom.js"></script>
+    <script src="/lib/rowState.js"></script>
+    <script src="/lib/iconRow.js"></script>
+    <script src="/content/content.js"></script>
+    <script src="/content/features/repostAge.js"></script>
+    <script src="/content/features/hideOldTracks.js"></script>
+    <script src="/content/features/hideLongTracks.js"></script>
+    <script src="/content/features/searchLinks.js"></script>
+    <script src="/content/features/downloadButton.js"></script>
+    <script src="/content/features/playlistMembership.js"></script>
+    <script>
+      (function () {
+        const out = document.getElementById('dom-results');
+        const lines = [];
+        let failures = 0;
+        function check(label, actual, expected) {
+          const ok = JSON.stringify(actual) === JSON.stringify(expected);
+          if (!ok) failures++;
+          lines.push(`${ok ? 'PASS' : 'FAIL'} ${label}` + (ok ? '' : ` — expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`));
+        }
+        check('isRelevantFrame() in the top frame', window.SCSMDom.isRelevantFrame(), true);
+        check('standalonePermalinkPath() reports the fixture permalink', window.SCSMDom.standalonePermalinkPath(), '/testartist/in-playlist-track');
+        check('findTrackAnchors finds none on this page shape', window.SCSMDom.findTrackAnchors(document.body).length, 0);
+        out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
+        out.style.color = failures === 0 ? '#1a7f37' : '#cf222e';
+        console.log('[SCSM selfcheck]', failures === 0 ? 'ALL PASSED' : failures + ' FAILED', lines);
+      })();
+    </script>
+  </body>
+</html>

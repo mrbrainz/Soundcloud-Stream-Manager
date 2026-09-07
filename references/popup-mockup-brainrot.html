@@ -1,0 +1,484 @@
+<title>SCSM Brainrot Popup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Baloo+2:wght@500;700;800&family=Space+Mono:wght@400;700&display=swap">
+<style>
+  :root{
+    --bg-deep:#0c0116;
+    --bg-panel:#160726;
+    --panel-edge:#2a0f45;
+    --magenta:#ff2ec4;
+    --lime:#c6ff1a;
+    --cyan:#19f4ff;
+    --grape:#8b5cf6;
+    --orange:#ff7a29;
+    --ink:#fdf6ff;
+    --ink-dim:#c9b6de;
+    --card:#1f0d33;
+    --card-edge:#3a1a5c;
+    --shadow-hard:#05000a;
+  }
+
+  *{box-sizing:border-box;}
+
+  body{
+    background:
+      radial-gradient(circle at 15% 10%, rgba(255,46,196,0.35), transparent 40%),
+      radial-gradient(circle at 85% 15%, rgba(25,244,255,0.28), transparent 45%),
+      radial-gradient(circle at 50% 90%, rgba(198,255,26,0.18), transparent 50%),
+      var(--bg-deep);
+    color:var(--ink);
+    font-family:'Baloo 2', ui-rounded, sans-serif;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:48px 20px;
+    overflow-x:hidden;
+  }
+
+  .stage{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:22px;
+  }
+
+  .stage-label{
+    font-family:'Space Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.28em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+    text-align:center;
+  }
+
+  .stage-label b{color:var(--lime); font-style:normal;}
+
+  /* ---- the "browser toolbar" chrome around the popup, so it reads as an extension ---- */
+  .chrome-frame{
+    width:392px;
+    max-width:92vw;
+    background:#1a1023;
+    border:2px solid var(--card-edge);
+    border-radius:18px;
+    padding:10px 10px 0;
+    box-shadow:0 30px 70px -20px rgba(255,46,196,0.35), 0 0 0 6px rgba(139,92,246,0.08);
+  }
+
+  .toolbar{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:2px 6px 10px;
+  }
+
+  .dot{width:9px;height:9px;border-radius:50%;}
+  .dot.r{background:#ff5f57;}
+  .dot.y{background:#febc2e;}
+  .dot.g{background:#28c840;}
+
+  .url-pill{
+    flex:1;
+    background:#0f0817;
+    border-radius:999px;
+    padding:5px 12px;
+    font-family:'Space Mono',monospace;
+    font-size:10px;
+    color:#8a7aa0;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    overflow:hidden;
+    white-space:nowrap;
+  }
+
+  .ext-icon{
+    width:20px;height:20px;border-radius:6px;
+    background:linear-gradient(135deg,var(--magenta),var(--grape));
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;
+    box-shadow:0 0 10px rgba(255,46,196,0.6);
+    flex-shrink:0;
+  }
+
+  /* ---- the popup itself ---- */
+  .popup{
+    background:
+      radial-gradient(circle at 100% 0%, rgba(255,122,41,0.20), transparent 55%),
+      radial-gradient(circle at 0% 100%, rgba(25,244,255,0.16), transparent 55%),
+      var(--bg-panel);
+    border:2px solid var(--panel-edge);
+    border-radius:16px 16px 4px 4px;
+    padding:16px 14px 18px;
+    position:relative;
+    overflow:hidden;
+  }
+
+  .popup::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background-image:repeating-linear-gradient(115deg, rgba(255,255,255,0.025) 0 2px, transparent 2px 26px);
+    pointer-events:none;
+  }
+
+  header.pop-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:8px;
+    margin-bottom:14px;
+    position:relative;
+  }
+
+  .titleblock{transform:rotate(-1.4deg);}
+
+  h1.brand{
+    font-family:'Bungee', 'Baloo 2', sans-serif;
+    font-size:19px;
+    line-height:1.05;
+    margin:0;
+    letter-spacing:0.01em;
+    background:linear-gradient(95deg, var(--lime), var(--cyan) 35%, var(--magenta) 70%, var(--orange));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    text-shadow:2px 2px 0 rgba(0,0,0,0.35);
+  }
+
+  .tagline{
+    font-family:'Space Mono', monospace;
+    font-size:9.5px;
+    letter-spacing:0.05em;
+    color:var(--ink-dim);
+    margin-top:4px;
+  }
+
+  .tagline .heart{color:var(--magenta);}
+
+  .streak{
+    font-family:'Space Mono', monospace;
+    font-size:10px;
+    background:#0f0817;
+    border:1px solid var(--card-edge);
+    border-radius:999px;
+    padding:4px 8px;
+    display:flex;
+    align-items:center;
+    gap:4px;
+    color:var(--lime);
+    white-space:nowrap;
+    box-shadow:inset 0 0 0 1px rgba(198,255,26,0.15);
+  }
+
+  .rows{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+
+  .row{
+    background:var(--card);
+    border:1.5px solid var(--card-edge);
+    border-radius:12px;
+    padding:9px 10px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    position:relative;
+    transition:transform .15s ease, border-color .15s ease;
+  }
+
+  .row.on{
+    border-color:var(--accent, var(--lime));
+    box-shadow:0 0 0 1px var(--accent, var(--lime)) inset, 0 0 16px -4px var(--accent, var(--lime));
+  }
+
+  .emoji{
+    font-size:17px;
+    width:26px;
+    text-align:center;
+    flex-shrink:0;
+    filter:drop-shadow(0 2px 0 rgba(0,0,0,0.4));
+  }
+
+  .row-text{flex:1; min-width:0;}
+
+  .row-title{
+    font-weight:700;
+    font-size:12.5px;
+    line-height:1.25;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    flex-wrap:wrap;
+  }
+
+  .badge{
+    font-family:'Space Mono', monospace;
+    font-size:8px;
+    letter-spacing:0.06em;
+    padding:2px 5px;
+    border-radius:5px;
+    font-weight:700;
+    text-transform:uppercase;
+    line-height:1;
+    transform:rotate(-3deg);
+    display:inline-block;
+  }
+  .badge.fire{background:var(--orange); color:#2a0d00;}
+  .badge.new{background:var(--cyan); color:#00252a;}
+  .badge.core{background:var(--grape); color:#f4ecff;}
+
+  .row-sub{
+    font-size:10.5px;
+    color:var(--ink-dim);
+    margin-top:2px;
+    line-height:1.3;
+  }
+
+  .row-sub .val{
+    color:var(--lime);
+    font-family:'Space Mono', monospace;
+    font-weight:700;
+  }
+
+  /* toggle switch, chunky pill style */
+  .toggle{
+    width:38px;
+    height:22px;
+    border-radius:999px;
+    background:#0f0817;
+    border:1.5px solid var(--card-edge);
+    flex-shrink:0;
+    position:relative;
+    cursor:pointer;
+  }
+
+  .toggle.on{
+    background:linear-gradient(90deg, var(--lime), var(--cyan));
+    border-color:transparent;
+  }
+
+  .toggle .knob{
+    position:absolute;
+    top:2px; left:2px;
+    width:16px; height:16px;
+    border-radius:50%;
+    background:#2a1a3d;
+    transition:left .15s ease;
+    box-shadow:0 1px 3px rgba(0,0,0,0.5);
+  }
+
+  .toggle.on .knob{
+    left:18px;
+    background:#0c1400;
+  }
+
+  .stepper{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    margin-top:5px;
+  }
+
+  .stepper input{
+    width:38px;
+    background:#0f0817;
+    border:1.5px solid var(--card-edge);
+    border-radius:7px;
+    color:var(--ink);
+    font-family:'Space Mono', monospace;
+    font-size:11px;
+    text-align:center;
+    padding:3px 0;
+  }
+
+  .stepper span{
+    font-size:10px;
+    color:var(--ink-dim);
+    font-family:'Space Mono', monospace;
+  }
+
+  .searchlinks{
+    display:flex;
+    gap:4px;
+    margin-top:6px;
+    flex-wrap:wrap;
+  }
+
+  .searchlinks .chip{
+    font-family:'Space Mono', monospace;
+    font-size:8.5px;
+    padding:3px 6px;
+    border-radius:999px;
+    background:#0f0817;
+    border:1px solid var(--card-edge);
+    color:var(--ink-dim);
+  }
+
+  .searchlinks .chip.active{
+    color:#00252a;
+    background:var(--cyan);
+    border-color:transparent;
+    font-weight:700;
+  }
+
+  footer.pop-foot{
+    margin-top:14px;
+    padding-top:10px;
+    border-top:1.5px dashed var(--card-edge);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-family:'Space Mono', monospace;
+    font-size:9px;
+    color:var(--ink-dim);
+  }
+
+  .foot-cta{
+    background:linear-gradient(95deg, var(--magenta), var(--orange));
+    color:#2a0000;
+    font-weight:700;
+    padding:6px 12px;
+    border-radius:999px;
+    font-family:'Baloo 2', sans-serif;
+    font-size:11px;
+    box-shadow:0 4px 0 var(--shadow-hard);
+    transform:rotate(1deg);
+  }
+
+  .sticker{
+    position:absolute;
+    font-family:'Bungee', sans-serif;
+    font-size:10px;
+    background:var(--lime);
+    color:#0c1400;
+    padding:4px 7px;
+    border-radius:6px;
+    transform:rotate(9deg);
+    box-shadow:0 3px 0 var(--shadow-hard);
+    top:-10px;
+    right:6px;
+    z-index:2;
+  }
+
+  @media (prefers-reduced-motion: no-preference){
+    .row{ }
+  }
+
+  .annotations{
+    width:392px;
+    max-width:92vw;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    font-family:'Space Mono', monospace;
+    font-size:10.5px;
+    color:var(--ink-dim);
+    line-height:1.5;
+  }
+
+  .annotations b{color:var(--ink); font-weight:700;}
+
+  @media (max-width:480px){
+    .chrome-frame, .annotations{width:100%;}
+  }
+</style>
+
+<div class="stage">
+  <div class="stage-label">soundcloud stream manager &mdash; <b>brainrot edition</b> mockup, visual pitch only</div>
+
+  <div class="chrome-frame">
+    <div class="toolbar">
+      <div class="ext-icon">🎧</div>
+      <div class="url-pill">soundcloud.com/stream</div>
+      <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+    </div>
+
+    <div class="popup">
+      <div class="sticker">rizzed up</div>
+      <header class="pop-head">
+        <div class="titleblock">
+          <h1 class="brand">SCSM 💀</h1>
+          <div class="tagline">stream manager but it's <span class="heart">unhinged</span> fr fr</div>
+        </div>
+        <div class="streak">🔥 3 feeds cleaned</div>
+      </header>
+
+      <div class="rows">
+        <div class="row on" style="--accent:var(--cyan)">
+          <div class="emoji">⏰</div>
+          <div class="row-text">
+            <div class="row-title">repost age check <span class="badge new">new</span></div>
+            <div class="row-sub">see how <span class="val">stale</span> that repost really is</div>
+          </div>
+          <div class="toggle on"><div class="knob"></div></div>
+        </div>
+
+        <div class="row on" style="--accent:var(--grape)">
+          <div class="emoji">📂</div>
+          <div class="row-text">
+            <div class="row-title">playlist receipts <span class="badge core">core</span></div>
+            <div class="row-sub">shows which playlists got the track, no cap</div>
+          </div>
+          <div class="toggle on"><div class="knob"></div></div>
+        </div>
+
+        <div class="row on" style="--accent:var(--magenta)">
+          <div class="emoji">🧟</div>
+          <div class="row-text">
+            <div class="row-title">delete the ancient ones</div>
+            <div class="row-sub">hide anything older than <span class="val">30</span> days, it's mid</div>
+            <div class="stepper"><input value="30" readonly> <span>days deep</span></div>
+          </div>
+          <div class="toggle on"><div class="knob"></div></div>
+        </div>
+
+        <div class="row" style="--accent:var(--orange)">
+          <div class="emoji">😴</div>
+          <div class="row-text">
+            <div class="row-title">no snooze tracks</div>
+            <div class="row-sub">skip anything past <span class="val">12</span> min, we ain't got time</div>
+            <div class="stepper"><input value="12" readonly> <span>min cap</span></div>
+          </div>
+          <div class="toggle"><div class="knob"></div></div>
+        </div>
+
+        <div class="row on" style="--accent:var(--lime)">
+          <div class="emoji">🔍</div>
+          <div class="row-text">
+            <div class="row-title">find it everywhere <span class="badge fire">fire</span></div>
+            <div class="row-sub">one click to every platform, secure the bag</div>
+            <div class="searchlinks">
+              <span class="chip active">deezer</span>
+              <span class="chip active">apple music</span>
+              <span class="chip active">beatport</span>
+              <span class="chip active">spotify</span>
+            </div>
+          </div>
+          <div class="toggle on"><div class="knob"></div></div>
+        </div>
+
+        <div class="row" style="--accent:var(--cyan)">
+          <div class="emoji">⬇️</div>
+          <div class="row-text">
+            <div class="row-title">yoink button <span class="badge new">legacy</span></div>
+            <div class="row-sub">bring back the old download btn, ok boomer mode</div>
+          </div>
+          <div class="toggle"><div class="knob"></div></div>
+        </div>
+      </div>
+
+      <footer class="pop-foot">
+        <span>v2.0 &middot; saves instantly</span>
+        <span class="foot-cta">bet 🤝</span>
+      </footer>
+    </div>
+  </div>
+
+  <div class="annotations">
+    <div><b>What changed vs. the real popup:</b> same six settings (repost age, playlist membership, hide-old, hide-long, search links, legacy download) — just reskinned as chunky neon toggle cards with slang copy, sticker badges, and a gradient logo instead of plain checkboxes.</div>
+    <div><b>Not wired up</b> — this is a static visual pitch, not the actual popup.html/css. Say the word and I'll build it into the extension for real (probably toned down about 30% so it still reads fast at a glance).</div>
+  </div>
+</div>

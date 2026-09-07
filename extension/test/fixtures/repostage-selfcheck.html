@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SCSM mock fixture — repost age feature self-check</title>
+    <style>
+      body { font-family: sans-serif; max-width: 640px; margin: 24px auto; }
+      .fixture-note { color: #888; font-size: 12px; }
+      #results { font-family: monospace; white-space: pre-wrap; }
+      .pass { color: #1a7f37; }
+      .fail { color: #cf222e; }
+      .sc-visuallyhidden { position: absolute; width: 1px; height: 1px; overflow: hidden; }
+      li.soundList__item { border: 1px solid #ddd; padding: 8px; margin-bottom: 6px; }
+    </style>
+  </head>
+  <body>
+    <p class="fixture-note">
+      Exercises the "show repost age" feature end-to-end: toggling
+      <code>showRepostAge</code> via <code>lib/settings.js</code> and
+      confirming <code>content/features/repostAge.js</code> annotates (and
+      un-annotates) the right rows. See <a href="../README.md">test/README.md</a>.
+      Each repost row deliberately puts a reposting-user profile link (a
+      1-segment href) CLOSER to the "Reposted X ago" text than the real
+      track link, and gives the track link a plain, non-
+      <code>soundTitle__title</code> class - reproducing the live-SoundCloud
+      structure that broke this feature's permalink lookup (see
+      <a href="https://github.com/mrbrainz/Soundcloud-Stream-Manager/issues/8">#8</a>'s
+      follow-up fix).
+    </p>
+    <div id="results">running…</div>
+
+    <ul>
+      <li class="soundList__item" id="row-old-repost">
+        <a class="sc-link-light" href="/repostuser123">RepostUser</a>
+        <span class="sc-ministats-reposts">reposted</span>
+        <time class="relativeTime" datetime="2023-01-15T10:00:00Z">
+          <span class="sc-visuallyhidden">Reposted 2 years ago</span>
+        </time>
+        <a class="sound__coverArt" href="/testartist/old-repost-track">[cover]</a>
+        <a class="trackLink" href="/testartist/old-repost-track">Old Repost Track</a>
+      </li>
+      <li class="soundList__item" id="row-recent-repost">
+        <a class="sc-link-light" href="/repostuser123">RepostUser</a>
+        <span class="sc-ministats-reposts">reposted</span>
+        <time class="relativeTime" datetime="2026-09-04T10:00:00Z">
+          <span class="sc-visuallyhidden">Reposted 2 days ago</span>
+        </time>
+        <a class="sound__coverArt" href="/testartist/recent-repost-track">[cover]</a>
+        <a class="trackLink" href="/testartist/recent-repost-track">Recent Repost Track</a>
+      </li>
+      <li class="soundList__item" id="row-original">
+        <a class="trackLink" href="/testartist/long-mix">Long Mix Session</a>
+      </li>
+    </ul>
+
+    <script src="/test/mocks/chrome-mock.js"></script>
+    <script src="/test/mocks/data.js"></script>
+    <script src="/test/mocks/sc-api-mock.js"></script>
+    <script src="/content/mainWorldBridge.js"></script>
+    <script src="/lib/settings.js"></script>
+    <script src="/lib/auth.js"></script>
+    <script src="/lib/api.js"></script>
+    <script src="/lib/dom.js"></script>
+    <script src="/content/features/repostAge.js"></script>
+    <script>
+      (async function () {
+        const out = document.getElementById('results');
+        const lines = [];
+        let failures = 0;
+
+        function check(label, actual, expected) {
+          const ok = JSON.stringify(actual) === JSON.stringify(expected);
+          if (!ok) failures++;
+          lines.push(
+            `${ok ? 'PASS' : 'FAIL'} ${label}` +
+              (ok ? '' : ` — expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`)
+          );
+        }
+        function wait(ms) {
+          return new Promise((resolve) => setTimeout(resolve, ms));
+        }
+        function badgesIn(id) {
+          return document.getElementById(id).querySelectorAll('.scsm-repost-age');
+        }
+
+        await wait(30); // let the feature's initial settings.get() apply
+        check('no badges before the feature is enabled', document.querySelectorAll('.scsm-repost-age').length, 0);
+
+        await window.SCSMSettings.set({ showRepostAge: true });
+        await wait(100); // settings change -> rescan -> resolve -> annotate
+
+        check('old repost gets a badge', badgesIn('row-old-repost').length, 1);
+        // mocks/data.js's old-repost-track is created_at 2023-01-15 - the
+        // real elapsed time (not the fixture's cosmetic "Reposted 2 years
+        // ago" display text) is what the badge computes, so assert on the
+        // year floor rather than a hardcoded string that'll drift as time
+        // passes.
+        const oldRepostYears = Math.floor((Date.now() - new Date('2023-01-15T10:00:00Z').getTime()) / (1000 * 60 * 60 * 24 * 365));
+        check('old repost badge says the correct elapsed years', badgesIn('row-old-repost')[0].textContent.includes(`${oldRepostYears}y old`), true);
+        check('recent repost gets a badge', badgesIn('row-recent-repost').length, 1);
+        check('recent repost badge says "2d old"', badgesIn('row-recent-repost')[0].textContent.includes('2d old'), true);
+        check('a non-repost row never gets a badge', badgesIn('row-original').length, 0);
+
+        // ---- idempotency: a manual rescan (simulating a DOM mutation) shouldn't duplicate badges ----
+        window.SCSMDom.rescan();
+        await wait(50);
+        check('rescanning while already annotated does not duplicate the badge', badgesIn('row-old-repost').length, 1);
+
+        // ---- toggling off removes every badge ----
+        await window.SCSMSettings.set({ showRepostAge: false });
+        await wait(30);
+        check('toggling off removes all badges', document.querySelectorAll('.scsm-repost-age').length, 0);
+
+        // ---- toggling back on re-annotates (from cache, so near-instant) ----
+        await window.SCSMSettings.set({ showRepostAge: true });
+        await wait(50);
+        check('toggling back on re-annotates', badgesIn('row-old-repost').length, 1);
+
+        out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
+        out.className = failures === 0 ? 'pass' : 'fail';
+        console.log('[SCSM selfcheck]', failures === 0 ? 'ALL PASSED' : failures + ' FAILED', lines);
+      })();
+    </script>
+  </body>
+</html>

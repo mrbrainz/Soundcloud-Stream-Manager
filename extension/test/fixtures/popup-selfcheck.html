@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="/popup/popup.css" />
+    <style>
+      .fixture-note { color: #888; font-size: 12px; font-family: sans-serif; max-width: 640px; background: #fff; padding: 8px; }
+      #results { font-family: monospace; white-space: pre-wrap; background: #fff; padding: 8px; }
+      .pass { color: #1a7f37; }
+      .fail { color: #cf222e; }
+    </style>
+  </head>
+  <body>
+    <p class="fixture-note">
+      Reproduces <code>popup/popup.html</code>'s form markup (kept in sync
+      by hand — see <a href="../README.md">test/README.md</a>) and loads the
+      real, unmodified <code>popup/popup.js</code> against
+      <code>mocks/chrome-mock.js</code>'s in-memory
+      <code>chrome.storage.local</code>. Real popups can't be driven by this
+      session's browser tooling, so this is how popup.js gets verified.
+    </p>
+
+    <div class="popup">
+      <header class="pop-head">
+        <div class="titleblock" id="titleblock">
+          <h1 class="brand">SCSM 💀</h1>
+        </div>
+      </header>
+
+      <div class="rows">
+        <div class="row">
+          <div class="row-text">
+            <label class="row-title" for="showRepostAge">repost age check</label>
+          </div>
+          <label class="toggle"><input type="checkbox" id="showRepostAge"><span class="knob"></span></label>
+        </div>
+
+        <div class="row">
+          <div class="row-text">
+            <label class="row-title" for="showPlaylistMembership">playlist receipts</label>
+          </div>
+          <label class="toggle"><input type="checkbox" id="showPlaylistMembership"><span class="knob"></span></label>
+        </div>
+
+        <div class="row">
+          <div class="row-text">
+            <label class="row-title" for="hideOldTracks">delete the ancient ones</label>
+            <div class="stepper"><input type="number" id="hideOldTracksDays" class="threshold" min="1"> <span>days deep</span></div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="hideOldTracks"><span class="knob"></span></label>
+        </div>
+
+        <div class="row">
+          <div class="row-text">
+            <label class="row-title" for="hideLongTracks">no snooze tracks</label>
+            <div class="stepper"><input type="number" id="hideLongTracksMinutes" class="threshold" min="1"> <span>min cap</span></div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="hideLongTracks"><span class="knob"></span></label>
+        </div>
+
+        <div class="row">
+          <div class="row-text">
+            <label class="row-title" for="hideTracksInPlaylist">already got it</label>
+          </div>
+          <label class="toggle"><input type="checkbox" id="hideTracksInPlaylist"><span class="knob"></span></label>
+        </div>
+
+        <div class="row">
+          <div class="row-text">
+            <label class="row-title" for="hideGenres">not the vibe</label>
+            <div class="genre-input-row">
+              <input type="text" id="hiddenGenreInput" class="genre-input" placeholder="e.g. Techno">
+              <button type="button" id="hiddenGenreAdd" class="genre-add-btn">add</button>
+            </div>
+            <div class="genre-chips" id="hiddenGenreChips"></div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="hideGenres"><span class="knob"></span></label>
+        </div>
+
+        <div class="row">
+          <div class="row-text">
+            <label class="row-title" for="showSearchLinks">find it everywhere</label>
+          </div>
+          <label class="toggle"><input type="checkbox" id="showSearchLinks"><span class="knob"></span></label>
+        </div>
+
+        <div class="row">
+          <div class="row-text">
+            <label class="row-title" for="showDownloadButton">yoink button</label>
+          </div>
+          <label class="toggle"><input type="checkbox" id="showDownloadButton"><span class="knob"></span></label>
+        </div>
+      </div>
+    </div>
+
+    <img id="hoverEasterEgg" class="hover-easter-egg" src="/popup/images/fellow-kids.webp" alt="" hidden>
+
+    <div id="results">running…</div>
+
+    <script src="/test/mocks/chrome-mock.js"></script>
+    <script src="/lib/settings.js"></script>
+    <script src="/popup/popup.js"></script>
+    <script>
+      (async function () {
+        const out = document.getElementById('results');
+        const lines = [];
+        let failures = 0;
+
+        function check(label, actual, expected) {
+          const ok = JSON.stringify(actual) === JSON.stringify(expected);
+          if (!ok) failures++;
+          lines.push(
+            `${ok ? 'PASS' : 'FAIL'} ${label}` +
+              (ok ? '' : ` — expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`)
+          );
+        }
+
+        function fire(el, type) {
+          el.dispatchEvent(new Event(type, { bubbles: true }));
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 20)); // let popup.js's async init() finish
+
+        // ---- initial render reflects defaults ----
+        check('showRepostAge starts unchecked (default off)', document.getElementById('showRepostAge').checked, false);
+        check('hideOldTracksDays starts at 30', document.getElementById('hideOldTracksDays').value, '30');
+        check('hideOldTracksDays gets the "inactive" style while hideOldTracks is off', document.getElementById('hideOldTracksDays').classList.contains('threshold--inactive'), true);
+        check(
+          'hideOldTracksDays is NOT disabled while off - editable before turning the feature on',
+          document.getElementById('hideOldTracksDays').disabled,
+          false
+        );
+
+        // ---- editing the threshold BEFORE enabling the feature still persists ----
+        const daysInputWhileOff = document.getElementById('hideOldTracksDays');
+        daysInputWhileOff.value = '45';
+        fire(daysInputWhileOff, 'change');
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        const settingsWhileOff = await window.SCSMSettings.get();
+        check('editing the threshold while the feature is off still persists the value', settingsWhileOff.hideOldTracksDays, 45);
+        check('editing the threshold while off does not turn the feature on', settingsWhileOff.hideOldTracks, false);
+
+        // ---- checking a toggle persists to settings ----
+        const repostAge = document.getElementById('showRepostAge');
+        repostAge.checked = true;
+        fire(repostAge, 'change');
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        const afterToggle = await window.SCSMSettings.get();
+        check('checking a toggle calls SCSMSettings.set()', afterToggle.showRepostAge, true);
+        // Not asserted via getComputedStyle: .row's border-color/box-shadow
+        // are CSS transitions, so a synchronous read right after the
+        // checkbox flips can still report the pre-transition value. The
+        // :has() match itself is the actual state the styling reacts to.
+        check(
+          'the row\'s :has() selector picks up the checked toggle (drives the "on" styling)',
+          repostAge.closest('.row').matches(':has(.toggle input:checked)'),
+          true
+        );
+
+        // ---- checking hideOldTracks removes its threshold's "inactive" style ----
+        const hideOld = document.getElementById('hideOldTracks');
+        hideOld.checked = true;
+        fire(hideOld, 'change');
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        check(
+          'hideOldTracksDays loses the "inactive" style once hideOldTracks is checked',
+          document.getElementById('hideOldTracksDays').classList.contains('threshold--inactive'),
+          false
+        );
+        check('the value set while off (45) carried through to being turned on', document.getElementById('hideOldTracksDays').value, '45');
+
+        // ---- editing a threshold persists the new value ----
+        const daysInput = document.getElementById('hideOldTracksDays');
+        daysInput.value = '10';
+        fire(daysInput, 'change');
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        const afterThreshold = await window.SCSMSettings.get();
+        check('editing the threshold persists the new value', afterThreshold.hideOldTracksDays, 10);
+        check('editing one threshold does not disturb the other setting', afterThreshold.showRepostAge, true);
+
+        // ---- external change (e.g. another popup instance) reflects back into the form ----
+        await window.SCSMSettings.set({ showPlaylistMembership: true });
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        check(
+          'a settings change from elsewhere is reflected back into the form (live-apply)',
+          document.getElementById('showPlaylistMembership').checked,
+          true
+        );
+
+        // ---- new #52 toggle wires up the same as any other ----
+        const hideInPlaylist = document.getElementById('hideTracksInPlaylist');
+        check('hideTracksInPlaylist starts unchecked (default off)', hideInPlaylist.checked, false);
+        hideInPlaylist.checked = true;
+        fire(hideInPlaylist, 'change');
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        const afterHideInPlaylist = await window.SCSMSettings.get();
+        check('checking hideTracksInPlaylist persists to settings', afterHideInPlaylist.hideTracksInPlaylist, true);
+
+        // ---- #53 hidden-genres list: add via button, add via Enter, case-insensitive de-dupe, remove via chip "×" ----
+        check('hideGenres starts unchecked (default off)', document.getElementById('hideGenres').checked, false);
+        check('no genre chips are rendered before any are added', document.querySelectorAll('.genre-chip').length, 0);
+
+        const genreInput = document.getElementById('hiddenGenreInput');
+        genreInput.value = 'Techno';
+        document.getElementById('hiddenGenreAdd').click();
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        let afterAdd = await window.SCSMSettings.get();
+        check('clicking "add" persists the typed genre', afterAdd.hiddenGenres, ['Techno']);
+        check('a chip renders for the added genre', document.querySelectorAll('.genre-chip').length, 1);
+        check('the input is cleared after adding', genreInput.value, '');
+
+        genreInput.value = 'Vaporwave';
+        genreInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        afterAdd = await window.SCSMSettings.get();
+        check('pressing Enter also adds a genre (not just the button)', afterAdd.hiddenGenres, ['Techno', 'Vaporwave']);
+        check('two chips now render, one per genre', document.querySelectorAll('.genre-chip').length, 2);
+
+        genreInput.value = 'techno'; // different case, same genre already in the list
+        document.getElementById('hiddenGenreAdd').click();
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        afterAdd = await window.SCSMSettings.get();
+        check('adding a genre that only differs by case does not add a duplicate', afterAdd.hiddenGenres, ['Techno', 'Vaporwave']);
+
+        genreInput.value = '   ';
+        document.getElementById('hiddenGenreAdd').click();
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        afterAdd = await window.SCSMSettings.get();
+        check('adding a blank/whitespace-only value does nothing', afterAdd.hiddenGenres, ['Techno', 'Vaporwave']);
+
+        document.querySelector('.genre-chip button').click(); // removes the first chip ("Techno")
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        const afterRemove = await window.SCSMSettings.get();
+        check('clicking a chip\'s "×" removes just that genre', afterRemove.hiddenGenres, ['Vaporwave']);
+        check('only one chip remains after removal', document.querySelectorAll('.genre-chip').length, 1);
+
+        const genresToggle = document.getElementById('hideGenres');
+        genresToggle.checked = true;
+        fire(genresToggle, 'change');
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        check('checking hideGenres persists to settings', (await window.SCSMSettings.get()).hideGenres, true);
+
+        // ---- #51 hover easter egg: hovering the title shows/follows/hides the image ----
+        const egg = document.getElementById('hoverEasterEgg');
+        check('the easter-egg image starts hidden', egg.hidden, true);
+        document.getElementById('titleblock').dispatchEvent(new MouseEvent('mouseenter', { bubbles: true, clientX: 50, clientY: 60 }));
+        check('hovering the title unhides the easter-egg image', egg.hidden, false);
+        document.getElementById('titleblock').dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 120, clientY: 200 }));
+        check('the easter-egg image tracks the cursor (left)', egg.style.left, '132px');
+        check('the easter-egg image tracks the cursor (top)', egg.style.top, '212px');
+        document.getElementById('titleblock').dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+        check('leaving the title hides the easter-egg image again', egg.hidden, true);
+
+        out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
+        out.className = failures === 0 ? 'pass' : 'fail';
+        console.log('[SCSM selfcheck]', failures === 0 ? 'ALL PASSED' : failures + ' FAILED', lines);
+      })();
+    </script>
+  </body>
+</html>

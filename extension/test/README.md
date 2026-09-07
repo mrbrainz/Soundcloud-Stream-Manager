@@ -1,0 +1,180 @@
+# Mock test harness
+
+Lets most SCSM 2.0 development and manual verification happen without
+touching `soundcloud.com` — no live rate limits, no needing genuinely-aged
+or genuinely-long tracks in a real account, and no risk of SoundCloud's own
+markup shifting mid-development the way it did under SCSM v1. See
+[docs/context.md](../../docs/context.md) and board card
+["Design a mock-based test approach"](https://github.com/mrbrainz/Soundcloud-Stream-Manager/issues/16).
+
+This complements, not replaces, [#15's live cross-page verification
+pass](https://github.com/mrbrainz/Soundcloud-Stream-Manager/issues/15) —
+that stays as the final real-world check before calling a feature done.
+
+## How it works
+
+Each fixture in `fixtures/` is a plain static HTML page that:
+
+1. Reproduces one real SoundCloud page shape's markup (see below).
+2. Loads the mocks (`mocks/chrome-mock.js`, `mocks/data.js`,
+   `mocks/sc-api-mock.js`).
+3. Loads the **real, unmodified** extension source files
+   (`extension/lib/*.js`, `extension/content/content.js`) via plain
+   `<script>` tags, in the same order `manifest.json` does.
+
+Because the mocks install `window.chrome.storage`, `window.fetch`,
+`window.__sc_hydration`, and the `oauth_token` cookie before the real source
+loads, that source has no idea it isn't running as a content script on
+`soundcloud.com` — nothing in `extension/lib` or `extension/content` needs
+mock-awareness or test-only branches.
+
+**A real limitation this harness can't catch:** every fixture script tag
+runs in one shared JS context, but a real Manifest V3 content script runs
+in an *isolated world* — same DOM as the page, but a separate `window` for
+JS-level globals. `window.__sc_hydration` is a plain JS global the page's
+own bundle sets in its *main* world, so it's invisible to the isolated
+world by default; live testing (see #15) found this the hard way when
+`getClientId()` always returned `null` in production despite fixtures
+passing throughout. `content/mainWorldBridge.js` (loaded in fixtures like
+any other real source file, via `"world": "MAIN"` in `manifest.json` for
+the actual extension) bridges this by republishing `client_id`/the user id
+onto a DOM attribute both worlds can see — but the fixtures can't exercise
+the *actual* world-isolation boundary itself, only the bridge's own
+extraction logic. Keep this in mind before trusting a fixture pass as proof
+something reads real page state correctly.
+
+## Running it
+
+Use `no-cache-server.py` (this directory), rooted at `extension/` (not
+`extension/test/` — the fixtures' `../../lib/...` script paths need `lib/`
+and `content/` to be reachable as siblings of `test/`):
+
+```bash
+python3 extension/test/no-cache-server.py 8765 extension
+```
+
+Plain `python3 -m http.server` also works functionally, but its weak
+cache headers mean a browser can keep serving yesterday's copy of a
+`<script src>` after you've edited the file — which reads exactly like a
+fix not working. `no-cache-server.py` sends `Cache-Control: no-store` on
+every response specifically to avoid that trap during iterative testing.
+
+Then open `http://localhost:8765/test/` and click into a fixture. Open devtools:
+`mocks/sc-api-mock.js` runs a self-test against every mocked endpoint on
+load and logs pass/fail, so a broken mock or a typo'd fixture permalink
+fails loudly instead of a feature silently getting no data.
+
+(Opening the fixtures directly via `file://` also works for the DOM/mock
+parts, but `history.replaceState`, used by `standalone-track.html` to fake
+its own permalink path, and some `fetch` behavior are more reliable served
+over `http://`.)
+
+## Page shapes covered
+
+- **`fixtures/feed.html`** — the feed/library/search row shape:
+  `li.soundList__item` + `a.soundTitle__title[href]`, `sc-ministats-reposts`
+  marking a repost, and a `relativeTime`/`sc-visuallyhidden` "Reposted X
+  ago" structure matching what
+  [`references/soundcloud-repost-age.user.js`](../../references/soundcloud-repost-age.user.js)
+  expects. Feed, library, and search all share this shape, so one fixture
+  covers all three.
+- **`fixtures/api-selfcheck.html`** — not a page-shape fixture; asserts
+  `lib/auth.js` and `lib/api.js`'s actual return values against every
+  scenario in `mocks/data.js` (correctness, not just reachability — compare
+  `mocks/sc-api-mock.js`'s own self-test, which only checks the mocked
+  endpoints themselves respond).
+- **`fixtures/repostage-selfcheck.html`** — end-to-end test of
+  `content/features/repostAge.js`: toggling `showRepostAge` via
+  `lib/settings.js` and confirming reposts get the right "X old" badge, a
+  non-repost row never does, rescans don't duplicate badges, and toggling
+  off removes them all.
+- **`fixtures/hideoldtracks-selfcheck.html`** — end-to-end test of
+  `content/features/hideOldTracks.js`: toggling `hideOldTracks` minimizes
+  old rows uniformly (reposts AND original uploads), a recent row is left
+  alone, raising/lowering `hideOldTracksDays` restores/re-minimizes rows
+  live, the "show" link works while the feature stays on, and toggling the
+  feature off restores everything it minimized.
+- **`fixtures/hidelongtracks-selfcheck.html`** — end-to-end test of
+  `content/features/hideLongTracks.js`: toggling `hideLongTracks`
+  minimizes long rows by duration alone (a short REPOST is left alone,
+  proving it's not conflated with hideOldTracks), threshold raise/lower
+  restores/re-minimizes live, and toggling off restores everything.
+- **`fixtures/searchlinks-selfcheck.html`** — end-to-end test of
+  `content/features/searchLinks.js` and `lib/iconRow.js`: query building
+  (title+artist, punctuation stripped), all 4 platform URLs, sharing the
+  icon row with another feature's icon without disturbing it, skipping a
+  minimized row and resuming once it's restored (exercises
+  `rowState.restore()`'s rescan-on-restore hook), and toggle-off cleanup.
+- **`fixtures/downloadbutton-selfcheck.html`** — end-to-end test of
+  `content/features/downloadButton.js`: renders only for a
+  confirmed-downloadable track, the link carries the real `download_url`
+  and `client_id`, shares the icon row with other features, and the same
+  minimize/restore skip-and-resume behavior as the search links fixture.
+- **`fixtures/playlistmembership-selfcheck.html`** — end-to-end test of
+  `content/features/playlistMembership.js`: the initial crawl badges the
+  right tracks from `mocks/data.js`'s `playlistsPage`, and live sync -
+  adding a track (PUT) and deleting a playlist (DELETE) - updates badges
+  immediately. Installs a fake `XMLHttpRequest` class before the feature
+  script loads so `patchXHR()`'s real open/send-wrapping code runs against
+  a script-constructed request instead of a real network call, since this
+  session's tooling can't drive an actual PUT/DELETE against SoundCloud.
+- **`fixtures/rowstate-selfcheck.html`** — not a page-shape fixture;
+  asserts `lib/rowState.js`'s minimize/show treatment in isolation
+  (minimize hides original content behind a wrapper and shows a label +
+  "show" link, re-minimizing updates the label instead of duplicating it,
+  clicking "show" restores the exact original children).
+- **`fixtures/popup-selfcheck.html`** — reproduces `popup/popup.html`'s
+  form markup by hand (kept in sync manually — update both when the popup's
+  fields change) and loads the real, unmodified `popup/popup.js` against
+  the `chrome.storage.local` mock. Real extension popups can't be driven
+  by this session's browser tooling directly, so this is how `popup.js`
+  gets automated coverage: checking a toggle, editing a threshold,
+  disabled-state tracking, and a settings change from elsewhere reflecting
+  back into the open form.
+- **`fixtures/settings-selfcheck.html`** — not a page-shape fixture;
+  asserts `lib/settings.js`'s defaults, that `set()` merges rather than
+  replaces, and that `onChange` fires with the fully-merged settings object
+  for every `set()` call.
+- **`fixtures/dom-selfcheck.html`** — not a page-shape fixture; asserts
+  `lib/dom.js`'s row matching (`findTrackAnchors`, `permalinkPathFromHref`)
+  and its shared scan loop (`onScan`, `rescan`), including that a
+  dynamically-added row is picked up by the MutationObserver batch.
+- **`fixtures/standalone-track.html`** — the standalone
+  `soundcloud.com/artist/track` page shape: SoundCloud renders this inside a
+  same-origin `webiIframe` with a plain `<h1>` and no
+  `a.soundTitle__title` anchors at all. The fixture rewrites its own URL via
+  `history.replaceState` before the mocks load, so `location.pathname` —
+  what the real code reads as the permalink on this page shape — reports
+  whatever fixture track path you want to test.
+
+## Mock data
+
+`mocks/data.js` is the single source of truth for fixture scenarios, keyed
+by permalink path:
+
+| Scenario | Path | Exercises |
+|---|---|---|
+| Old repost | `/testartist/old-repost-track` | hide-old-tracks filter, large repost age |
+| Recent repost | `/testartist/recent-repost-track` | repost age display, should NOT hide |
+| Long mix | `/testartist/long-mix` | hide-long-tracks filter |
+| Short + downloadable | `/testartist/short-downloadable-track` | download button, search links, should NOT hide |
+| In 2 playlists | `/testartist/in-playlist-track` | playlist membership badge |
+
+To add a new scenario: add an entry to `mocks/data.js`'s `tracks` (and
+`playlistsPage` if it should belong to a playlist), then reference its
+permalink path from a fixture's markup. No other file needs to change.
+
+## What's mocked vs. real
+
+- **Mocked:** `window.fetch` for anything hitting `api-v2.soundcloud.com`
+  (`/resolve`, `/tracks/{id}`, `/users/{id}/playlists`),
+  `window.__sc_hydration`, the `oauth_token` cookie, and
+  `chrome.storage.local`/`chrome.storage.onChanged`. Note that
+  `window.__sc_hydration` is only reachable at all because fixtures don't
+  simulate the isolated/main-world split — see the callout above.
+- **Real:** every file under `extension/lib/` and `extension/content/` —
+  the actual feature logic, unmodified.
+- **Not covered here:** the popup (`extension/popup/`) isn't wired into
+  these fixtures yet since it renders in its own extension-popup context
+  rather than a content-script page; revisit once the "Popup UI shell" card
+  lands and there's real toggle logic to exercise.

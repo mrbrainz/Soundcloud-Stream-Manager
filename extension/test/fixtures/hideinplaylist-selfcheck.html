@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SCSM mock fixture — hide-tracks-in-playlist feature self-check</title>
+    <style>
+      body { font-family: sans-serif; max-width: 640px; margin: 24px auto; }
+      .fixture-note { color: #888; font-size: 12px; }
+      #results { font-family: monospace; white-space: pre-wrap; }
+      .pass { color: #1a7f37; }
+      .fail { color: #cf222e; }
+      li.soundList__item { border: 1px solid #ddd; padding: 8px; margin-bottom: 6px; }
+    </style>
+  </head>
+  <body>
+    <p class="fixture-note">
+      Exercises "hide tracks already in a playlist" (#52) end-to-end:
+      toggling <code>hideTracksInPlaylist</code> via
+      <code>lib/settings.js</code> and confirming
+      <code>content/features/hideInPlaylistTracks.js</code> minimizes (and
+      restores) the right rows, that it triggers
+      <code>playlistMembership.js</code>'s crawl on its OWN even when
+      "show playlist membership" (the badge display toggle) is never turned
+      on, and that it reacts live to playlist add/remove sync. See
+      <a href="../README.md">test/README.md</a>.
+    </p>
+    <div id="results">running…</div>
+
+    <ul>
+      <li class="soundList__item" id="row-in-playlist">
+        <a class="soundTitle__title" href="/testartist/in-playlist-track">In Playlist Track</a>
+      </li>
+      <li class="soundList__item" id="row-not-in-playlist">
+        <a class="soundTitle__title" href="/testartist/old-repost-track">Old Repost Track</a>
+      </li>
+    </ul>
+
+    <script>
+      // See playlistmembership-selfcheck.html's identical setup comment -
+      // installed before the feature scripts so playlistMembership.js's
+      // lazy patchXHR() wraps this fake class instead of the real one.
+      class FakeXHR extends EventTarget {
+        open(method, url) {
+          this.method = method;
+          this.url = url;
+        }
+        send(body) {
+          this.body = body;
+        }
+      }
+      window.XMLHttpRequest = FakeXHR;
+    </script>
+    <script src="/test/mocks/chrome-mock.js"></script>
+    <script src="/test/mocks/data.js"></script>
+    <script src="/test/mocks/sc-api-mock.js"></script>
+    <script src="/content/mainWorldBridge.js"></script>
+    <script src="/lib/settings.js"></script>
+    <script src="/lib/auth.js"></script>
+    <script src="/lib/api.js"></script>
+    <script src="/lib/dom.js"></script>
+    <script src="/lib/rowState.js"></script>
+    <script src="/content/features/playlistMembership.js"></script>
+    <script src="/content/features/hideInPlaylistTracks.js"></script>
+    <script>
+      (async function () {
+        const out = document.getElementById('results');
+        const lines = [];
+        let failures = 0;
+
+        function check(label, actual, expected) {
+          const ok = JSON.stringify(actual) === JSON.stringify(expected);
+          if (!ok) failures++;
+          lines.push(
+            `${ok ? 'PASS' : 'FAIL'} ${label}` +
+              (ok ? '' : ` — expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`)
+          );
+        }
+        function wait(ms) {
+          return new Promise((resolve) => setTimeout(resolve, ms));
+        }
+        function minimized(id) {
+          return window.SCSMRowState.isMinimized(document.getElementById(id));
+        }
+        function fireFakeXHR(method, url, bodyObj) {
+          const xhr = new XMLHttpRequest();
+          xhr.open(method, url);
+          xhr.send(bodyObj ? JSON.stringify(bodyObj) : undefined);
+          xhr.status = 200;
+          xhr.dispatchEvent(new Event('load'));
+        }
+
+        await wait(30);
+        check('nothing minimized before the feature is enabled', minimized('row-in-playlist'), false);
+
+        // ---- the crawl runs on its own, WITHOUT showPlaylistMembership ever being turned on ----
+        // in-playlist-track is in "My Favourites"/"Techno 2026" per
+        // mocks/data.js's playlistsPage; old-repost-track is in no playlist.
+        check('showPlaylistMembership (badge display) stays off', (await window.SCSMSettings.get()).showPlaylistMembership, false);
+        await window.SCSMSettings.set({ hideTracksInPlaylist: true });
+        await wait(250); // crawl (with its 250ms inter-page delay) + rescan
+
+        check('a track already in a playlist is minimized', minimized('row-in-playlist'), true);
+        check('a track in no playlist is left alone', minimized('row-not-in-playlist'), false);
+        check(
+          'the minimized row label shows the title and why it was hidden',
+          document.getElementById('row-in-playlist').querySelector('.scsm-row-summary-text').textContent,
+          'In Playlist Track — hidden: already in a playlist'
+        );
+        check('no playlist membership BADGE was rendered - that display is a separate toggle', document.querySelectorAll('.scsm-playlist-badge').length, 0);
+
+        // ---- idempotency ----
+        window.SCSMDom.rescan();
+        await wait(100);
+        check('a later, unrelated rescan does not duplicate anything odd', minimized('row-in-playlist'), true);
+
+        // ---- the "show" link restores a row and it STAYS shown (same dismissal tracking as hideOldTracks.js) ----
+        document.getElementById('row-in-playlist').querySelector('.scsm-row-show-link').click();
+        await wait(150);
+        check('clicking "show" restores the row and it STAYS shown', minimized('row-in-playlist'), false);
+        window.SCSMDom.rescan();
+        await wait(100);
+        check('a later rescan does not re-hide the dismissed row', minimized('row-in-playlist'), false);
+
+        // ---- live sync: adding old-repost-track to a playlist hides it without re-toggling the feature ----
+        fireFakeXHR('PUT', 'https://api-v2.soundcloud.com/playlists/5001', { playlist: { tracks: [1005, 1001] } });
+        await wait(100);
+        check('adding a track to a playlist live-hides it while the filter is on', minimized('row-not-in-playlist'), true);
+
+        // ---- toggling off restores everything, including the dismissed row ----
+        await window.SCSMSettings.set({ hideTracksInPlaylist: false });
+        await wait(30);
+        check('toggling off restores the dismissed row', minimized('row-in-playlist'), false);
+        check('toggling off restores the live-added row too', minimized('row-not-in-playlist'), false);
+
+        // ---- toggling back on re-hides everything from the already-crawled cache, no re-crawl needed ----
+        await window.SCSMSettings.set({ hideTracksInPlaylist: true });
+        await wait(100);
+        check('toggling back on re-minimizes from the already-crawled cache', minimized('row-in-playlist'), true);
+        check('toggling back on re-minimizes the live-synced row too', minimized('row-not-in-playlist'), true);
+
+        out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
+        out.className = failures === 0 ? 'pass' : 'fail';
+        console.log('[SCSM selfcheck]', failures === 0 ? 'ALL PASSED' : failures + ' FAILED', lines);
+      })();
+    </script>
+  </body>
+</html>

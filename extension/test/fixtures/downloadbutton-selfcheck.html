@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SCSM mock fixture — download button feature self-check</title>
+    <style>
+      body { font-family: sans-serif; max-width: 640px; margin: 24px auto; }
+      .fixture-note { color: #888; font-size: 12px; }
+      #results { font-family: monospace; white-space: pre-wrap; }
+      .pass { color: #1a7f37; }
+      .fail { color: #cf222e; }
+      li.soundList__item { border: 1px solid #ddd; padding: 8px; margin-bottom: 6px; }
+    </style>
+  </head>
+  <body>
+    <p class="fixture-note">
+      Exercises "show legacy download button" end-to-end: toggling
+      <code>showDownloadButton</code> via <code>lib/settings.js</code> and
+      confirming <code>content/features/downloadButton.js</code> only
+      renders for a confirmed-downloadable track, shares the icon row with
+      other features, and correctly skips/resumes on a minimized row. See
+      <a href="../README.md">test/README.md</a>.
+    </p>
+    <div id="results">running…</div>
+
+    <ul>
+      <li class="soundList__item" id="row-downloadable">
+        <a class="soundTitle__title" href="/testartist/short-downloadable-track">Short Downloadable Track</a>
+        <!-- Mimics SoundCloud's real like/repost/share button row (#40) -->
+        <div class="soundActions sc-button-toolbar">
+          <div class="sc-button-group sc-button-group-medium">
+            <button class="sc-button sc-button-like sc-button-secondary">Like</button>
+          </div>
+        </div>
+      </li>
+      <li class="soundList__item" id="row-not-downloadable">
+        <a class="soundTitle__title" href="/testartist/long-mix">Long Mix Session</a>
+      </li>
+    </ul>
+
+    <script src="/test/mocks/chrome-mock.js"></script>
+    <script src="/test/mocks/data.js"></script>
+    <script src="/test/mocks/sc-api-mock.js"></script>
+    <script src="/content/mainWorldBridge.js"></script>
+    <script src="/lib/settings.js"></script>
+    <script src="/lib/auth.js"></script>
+    <script src="/lib/api.js"></script>
+    <script src="/lib/dom.js"></script>
+    <script src="/lib/rowState.js"></script>
+    <script src="/lib/iconRow.js"></script>
+    <script src="/content/features/downloadButton.js"></script>
+    <script>
+      (async function () {
+        const out = document.getElementById('results');
+        const lines = [];
+        let failures = 0;
+
+        function check(label, actual, expected) {
+          const ok = JSON.stringify(actual) === JSON.stringify(expected);
+          if (!ok) failures++;
+          lines.push(
+            `${ok ? 'PASS' : 'FAIL'} ${label}` +
+              (ok ? '' : ` — expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`)
+          );
+        }
+        function wait(ms) {
+          return new Promise((resolve) => setTimeout(resolve, ms));
+        }
+        function buttonsIn(id) {
+          return document.getElementById(id).querySelectorAll('.scsm-download-button');
+        }
+
+        await wait(30);
+        check('no button before the feature is enabled', buttonsIn('row-downloadable').length, 0);
+
+        await window.SCSMSettings.set({ showDownloadButton: true });
+        await wait(100);
+
+        check('a downloadable track gets the button', buttonsIn('row-downloadable').length, 1);
+        check('a non-downloadable track gets no button', buttonsIn('row-not-downloadable').length, 0);
+
+        const link = buttonsIn('row-downloadable')[0];
+        check(
+          'the link is the signed redirect URL from GET /tracks/{id}/download, not a raw client_id link',
+          link.href,
+          'https://cf-media.sndcdn.com/mock-signed-download-1004'
+        );
+        check('the link opens in a new tab', link.target, '_blank');
+        check('the button reuses SoundCloud\'s own sc-button classes for native styling', link.classList.contains('sc-button-secondary'), true);
+        check('the button shows a download glyph, not a text label', link.textContent.trim(), '↓');
+        const soundActions = document.querySelector('#row-downloadable .soundActions');
+        check(
+          'the icon row is inserted immediately after .soundActions when present',
+          soundActions.nextElementSibling && soundActions.nextElementSibling.classList.contains('scsm-icon-row'),
+          true
+        );
+
+        // ---- the download endpoint genuinely requires OAuth, not just client_id ----
+        // (live-verified #38: a plain client_id 401s on the real API).
+        // Stubs SCSMAuth.authHeaders() directly instead of deleting the
+        // oauth_token cookie - clearing the cookie proved flaky in this
+        // sandboxed browser (intermittently didn't take effect before the
+        // very next synchronous read, for reasons unrelated to the actual
+        // extension code), so this tests the same real code path - no
+        // Authorization header reaching the mock - without depending on
+        // that browser cookie-jar timing. Also uses a separate,
+        // otherwise-untouched track id (9999) so there's no ambiguity with
+        // lib/api.js's dedupe/inflight tracking for 1004 from the
+        // button-render step above.
+        const originalAuthHeaders = window.SCSMAuth.authHeaders;
+        window.SCSMAuth.authHeaders = () => ({});
+        const redirectWithoutOauth = await window.SCSMApi.getDownloadRedirectUrl(9999);
+        window.SCSMAuth.authHeaders = originalAuthHeaders;
+        check('getDownloadRedirectUrl returns null without a real OAuth token', redirectWithoutOauth, null);
+
+        // ---- idempotency ----
+        window.SCSMDom.rescan();
+        await wait(50);
+        check('rescanning does not duplicate the button', buttonsIn('row-downloadable').length, 1);
+
+        // ---- coexists with another feature's icon in the same shared row ----
+        const container = window.SCSMIconRow.getOrCreateIconRow(document.getElementById('row-downloadable'));
+        check('the download button lives in the shared icon row', link.parentElement, container);
+
+        // ---- a minimized row is skipped, and resumes once restored ----
+        const row = document.getElementById('row-downloadable');
+        buttonsIn('row-downloadable').forEach((el) => el.remove());
+        window.SCSMRowState.minimize(row, 'Short Downloadable Track — manually minimized', { reason: 'test' });
+        window.SCSMDom.rescan();
+        await wait(100);
+        check('a minimized row gets no button while minimized', buttonsIn('row-downloadable').length, 0);
+
+        window.SCSMRowState.restore(row); // triggers SCSMDom.rescan() internally
+        await wait(100);
+        check('restoring the row lets the button render again', buttonsIn('row-downloadable').length, 1);
+
+        // ---- toggling off removes it ----
+        await window.SCSMSettings.set({ showDownloadButton: false });
+        await wait(30);
+        check('toggling off removes the button', document.querySelectorAll('.scsm-download-button').length, 0);
+
+        out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
+        out.className = failures === 0 ? 'pass' : 'fail';
+        console.log('[SCSM selfcheck]', failures === 0 ? 'ALL PASSED' : failures + ' FAILED', lines);
+      })();
+    </script>
+  </body>
+</html>
