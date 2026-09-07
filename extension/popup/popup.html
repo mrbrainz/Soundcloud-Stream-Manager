@@ -20,7 +20,7 @@
         <div class="row">
           <div class="emoji">⏰</div>
           <div class="row-text">
-            <label class="row-title" for="showRepostAge">repost age check</label>
+            <label class="row-title" for="showRepostAge" title="Shows how old a reposted track's original upload actually is.">repost age check</label>
             <div class="row-sub">see how <span class="val">stale</span> that repost really is</div>
           </div>
           <label class="toggle"><input type="checkbox" id="showRepostAge"><span class="knob"></span></label>
@@ -29,7 +29,7 @@
         <div class="row">
           <div class="emoji">📂</div>
           <div class="row-text">
-            <label class="row-title" for="showPlaylistMembership">playlist receipts</label>
+            <label class="row-title" for="showPlaylistMembership" title="Shows which of your own playlists a track is already in.">playlist receipts</label>
             <div class="row-sub">shows which playlists got the track, no cap</div>
           </div>
           <label class="toggle"><input type="checkbox" id="showPlaylistMembership"><span class="knob"></span></label>
@@ -38,7 +38,7 @@
         <div class="row">
           <div class="emoji">🧟</div>
           <div class="row-text">
-            <label class="row-title" for="hideOldTracks">delete the ancient ones</label>
+            <label class="row-title" for="hideOldTracks" title="Hides any track (repost or original upload) older than the day threshold below.">delete the ancient ones</label>
             <div class="row-sub">hide anything older than this, it's mid</div>
             <div class="stepper"><input type="number" id="hideOldTracksDays" class="threshold" min="1"> <span>days deep</span></div>
           </div>
@@ -48,9 +48,9 @@
         <div class="row">
           <div class="emoji">😴</div>
           <div class="row-text">
-            <label class="row-title" for="hideLongTracks">no snooze tracks</label>
+            <label class="row-title" for="hideLongTracks" title="Hides any track longer than the minute threshold below - handy for skipping full mixes.">no snooze tracks</label>
             <div class="row-sub">skip anything past this, we ain't got time</div>
-            <div class="stepper"><input type="number" id="hideLongTracksMinutes" class="threshold" min="1"> <span>min cap</span></div>
+            <div class="stepper"><input type="number" id="hideLongTracksMinutes" class="threshold" min="1"> <span>mins deep</span></div>
           </div>
           <label class="toggle"><input type="checkbox" id="hideLongTracks"><span class="knob"></span></label>
         </div>
@@ -58,7 +58,7 @@
         <div class="row">
           <div class="emoji">📦</div>
           <div class="row-text">
-            <label class="row-title" for="hideTracksInPlaylist">already got it</label>
+            <label class="row-title" for="hideTracksInPlaylist" title="Hides tracks you've already sorted into one of your own playlists.">already got it</label>
             <div class="row-sub">hide tracks you already stashed in a playlist</div>
           </div>
           <label class="toggle"><input type="checkbox" id="hideTracksInPlaylist"><span class="knob"></span></label>
@@ -67,7 +67,7 @@
         <div class="row">
           <div class="emoji">🚫</div>
           <div class="row-text">
-            <label class="row-title" for="hideGenres">not the vibe</label>
+            <label class="row-title" for="hideGenres" title="Hides tracks tagged with any genre on your hidden list below.">not the vibe</label>
             <div class="row-sub">hide anything tagged with a genre below</div>
             <div class="genre-input-row">
               <input type="text" id="hiddenGenreInput" class="genre-input" placeholder="e.g. Techno">
@@ -81,7 +81,7 @@
         <div class="row">
           <div class="emoji">🔍</div>
           <div class="row-text">
-            <label class="row-title" for="showSearchLinks">find it everywhere</label>
+            <label class="row-title" for="showSearchLinks" title="Adds one-click search links to Deezer, Apple Music, Beatport, and Spotify for each track.">find it everywhere</label>
             <div class="row-sub">one click to every platform, secure the bag</div>
             <div class="searchlinks">
               <span class="chip">deezer</span>
@@ -96,10 +96,21 @@
         <div class="row">
           <div class="emoji">⬇️</div>
           <div class="row-text">
-            <label class="row-title" for="showDownloadButton">yoink button <span class="badge">legacy</span></label>
+            <label class="row-title" for="showDownloadButton" title="Adds a direct download link for any track SoundCloud itself allows downloading.">yoink button <span class="badge">legacy</span></label>
             <div class="row-sub">bring back the old download btn, ok boomer mode</div>
           </div>
           <label class="toggle"><input type="checkbox" id="showDownloadButton"><span class="knob"></span></label>
+        </div>
+      </div>
+
+      <div class="scope-section">
+        <div class="scope-label" title="Every toggle above only runs on the page types checked here.">where it works</div>
+        <div class="scope-row">
+          <label class="scope-chip"><input type="checkbox" id="pageType-feed" value="feed"> feed</label>
+          <label class="scope-chip"><input type="checkbox" id="pageType-discover" value="discover"> discover</label>
+          <label class="scope-chip"><input type="checkbox" id="pageType-track" value="track"> tracks</label>
+          <label class="scope-chip"><input type="checkbox" id="pageType-profile" value="profile"> profiles</label>
+          <label class="scope-chip"><input type="checkbox" id="pageType-playlist" value="playlist"> playlists</label>
         </div>
       </div>
 

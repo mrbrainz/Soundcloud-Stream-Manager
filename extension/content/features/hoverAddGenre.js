@@ -28,6 +28,7 @@
   const ADDED_CLASS = BTN_CLASS + '--added';
 
   let hiddenGenresLower = [];
+  let pageTypeEnabled = true;
 
   // Feather-style icon paths (MIT-licensed shapes, redrawn inline rather
   // than pulled from a library - three tiny 24x24 viewBox SVGs, sized down
@@ -163,6 +164,7 @@
   }
 
   function onDirty(dirtyNodes) {
+    if (!pageTypeEnabled) return;
     dirtyNodes.forEach((node) => {
       if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
       if (!node) return;
@@ -173,7 +175,17 @@
 
   function applySetting(settings) {
     hiddenGenresLower = (Array.isArray(settings.hiddenGenres) ? settings.hiddenGenres : []).map((g) => String(g).toLowerCase());
+    // No settings toggle of its own (see the file comment) - #65's
+    // page-type scoping is the one thing that CAN turn this off.
+    const wasEnabled = pageTypeEnabled;
+    pageTypeEnabled = window.SCSMDom.isPageTypeEnabled(settings);
+    if (!pageTypeEnabled) {
+      document.querySelectorAll('.' + BTN_CLASS).forEach((el) => el.remove());
+      document.querySelectorAll(TAG_SELECTOR).forEach((tagEl) => delete tagEl.dataset.scsmGenreBtn);
+      return;
+    }
     refreshAllButtons();
+    if (!wasEnabled) window.SCSMDom.rescan();
   }
 
   if (window.SCSMDom.isRelevantFrame()) {
@@ -181,5 +193,6 @@
     window.SCSMDom.onScan(onDirty);
     window.SCSMSettings.get().then(applySetting);
     window.SCSMSettings.onChange(applySetting);
+    window.SCSMDom.onPageTypeChange(() => window.SCSMSettings.get().then(applySetting));
   }
 })();

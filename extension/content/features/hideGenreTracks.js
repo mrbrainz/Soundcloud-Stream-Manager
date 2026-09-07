@@ -70,7 +70,7 @@
   }
 
   function applySetting(settings) {
-    const shouldEnable = !!settings.hideGenres;
+    const shouldEnable = !!settings.hideGenres && window.SCSMDom.isPageTypeEnabled(settings);
     const nextGenresLower = (Array.isArray(settings.hiddenGenres) ? settings.hiddenGenres : []).map((g) => String(g).toLowerCase());
     const genresChanged = JSON.stringify(nextGenresLower) !== JSON.stringify(hiddenGenresLower);
     hiddenGenresLower = nextGenresLower;
@@ -115,5 +115,6 @@
     window.SCSMDom.onScan(onDirty);
     window.SCSMSettings.get().then(applySetting);
     window.SCSMSettings.onChange(applySetting);
+    window.SCSMDom.onPageTypeChange(() => window.SCSMSettings.get().then(applySetting));
   }
 })();

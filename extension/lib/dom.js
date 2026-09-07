@@ -155,6 +155,106 @@
     }
   }
 
+  // ---- page-type classification (#65) ----
+  // Lets the user scope which pages each feature is active on (a popup
+  // setting - see lib/settings.js's enabledPageTypes). SoundCloud exposes
+  // no explicit page-type marker, so this is a best-effort classification
+  // of location.pathname, live-verified against real soundcloud.com
+  // (2026-09-07): /feed (feed), /discover (discover), /<artist> (profile,
+  // 1 segment), /<artist>/<track> (track, 2 segments), /<artist>/sets/<name>
+  // (playlist, 3 segments). All confirmed rendering directly in the TOP
+  // frame today, not inside a webiIframe - contradicts
+  // standalonePermalinkPath()'s older assumption for the track/playlist
+  // shape (see that function's own comment), which this doesn't touch;
+  // that's a separate, pre-existing concern.
+  //
+  // RESERVED_ROOT_SEGMENTS rules out the other known top-level routes
+  // (confirmed via the site's own nav) that would otherwise
+  // false-positive as a 1- or 2-segment "profile"/"track" path - a
+  // SoundCloud username can never collide with one of these, so this
+  // isn't a precision/recall tradeoff, just a known-reserved-word list.
+  const RESERVED_ROOT_SEGMENTS = new Set([
+    'you',
+    'artists',
+    'upload',
+    'notifications',
+    'messages',
+    'discover',
+    'feed',
+    'stream',
+    'search',
+    'tags',
+    'charts',
+    'settings',
+    'jobs',
+    'pro',
+    'pages',
+    'backstage',
+    'creators',
+  ]);
+
+  function pageType() {
+    const path = location.pathname.replace(/\/$/, '') || '/';
+    if (path === '/feed' || path === '/stream') return 'feed';
+    if (path === '/discover') return 'discover';
+
+    const playlistMatch = path.match(/^\/([^/]+)\/sets\/([^/]+)$/);
+    if (playlistMatch && !RESERVED_ROOT_SEGMENTS.has(playlistMatch[1])) return 'playlist';
+
+    const trackMatch = path.match(/^\/([^/]+)\/([^/]+)$/);
+    if (trackMatch && !RESERVED_ROOT_SEGMENTS.has(trackMatch[1])) return 'track';
+
+    const profileMatch = path.match(/^\/([^/]+)$/);
+    if (profileMatch && !RESERVED_ROOT_SEGMENTS.has(profileMatch[1])) return 'profile';
+
+    return null; // some other page shape (settings, notifications, etc.) - not one of the 5 scoped types
+  }
+
+  // Whether the CURRENT page's type is on the user's enabled list. An
+  // unclassified page shape (pageType() returning null) or a missing/
+  // malformed setting defaults to true - additive, not a breaking change:
+  // a page shape this classifier doesn't recognize shouldn't silently
+  // lose feature coverage it always had.
+  function isPageTypeEnabled(settings) {
+    const type = pageType();
+    if (!type) return true;
+    const enabled = settings && Array.isArray(settings.enabledPageTypes) ? settings.enabledPageTypes : null;
+    if (!enabled) return true;
+    return enabled.includes(type);
+  }
+
+  // ---- SPA navigation (#79, follow-up to #65) ----
+  // SoundCloud navigates in-app (e.g. clicking your own avatar to your
+  // profile) via history.pushState(), not a real page load - content
+  // scripts only run once per real load, so nothing previously told any
+  // feature its `enabled` flag (computed against pageType() above) had
+  // gone stale for the new URL. content/mainWorldBridge.js patches
+  // pushState/replaceState/popstate in the MAIN world (a page-API patch,
+  // same rule as the playlist XHR patch there) and publishes a
+  // 'scsm:navigation' CustomEvent on document - listened for here so
+  // every feature can subscribe through ONE place instead of each
+  // touching the DOM event directly.
+  const pageChangeCallbacks = [];
+  function onPageTypeChange(callback) {
+    pageChangeCallbacks.push(callback);
+  }
+
+  if (isRelevantFrame()) {
+    document.addEventListener('scsm:navigation', () => {
+      pageChangeCallbacks.forEach((cb) => {
+        try {
+          cb();
+        } catch (e) {
+          console.error('[SCSM dom] onPageTypeChange callback failed', e);
+        }
+      });
+      // The whole page's content swaps out on an SPA navigation - a fresh
+      // rescan picks it up immediately rather than waiting for individual
+      // mutations to trickle through the debounce.
+      rescan();
+    });
+  }
+
   window.SCSMDom = {
     isTopFrame,
     isRelevantFrame,
@@ -163,6 +263,9 @@
     findTrackAnchors,
     findRowForAnchor,
     isInSidebar,
+    pageType,
+    isPageTypeEnabled,
+    onPageTypeChange,
     onScan,
     rescan,
   };

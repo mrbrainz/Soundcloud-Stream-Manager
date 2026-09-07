@@ -87,12 +87,19 @@
         );
         check('the link opens in a new tab', link.target, '_blank');
         check('the button reuses SoundCloud\'s own sc-button classes for native styling', link.classList.contains('sc-button-secondary'), true);
-        check('the button shows a download glyph, not a text label', link.textContent.trim(), '↓');
+        const downloadIcon = link.querySelector('img');
+        check('the button shows a real download icon image, not the glyph fallback (#68)', !!downloadIcon, true);
+        check('the icon image points at the extension\'s own bundled asset', downloadIcon && downloadIcon.getAttribute('src'), '/icons/services/icon-download.png');
         const soundActions = document.querySelector('#row-downloadable .soundActions');
         check(
           'the icon row is inserted immediately after .soundActions when present',
           soundActions.nextElementSibling && soundActions.nextElementSibling.classList.contains('scsm-icon-row'),
           true
+        );
+        check(
+          'the icon row has a 3px top margin separating it from .soundActions (#68)',
+          soundActions.nextElementSibling.style.marginTop,
+          '3px'
         );
 
         // ---- the download endpoint genuinely requires OAuth, not just client_id ----

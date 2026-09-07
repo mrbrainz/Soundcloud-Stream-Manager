@@ -25,6 +25,12 @@
     hiddenGenres: Object.freeze([]),
     showSearchLinks: false,
     showDownloadButton: false,
+    // Which page types every feature is allowed to run on (#65) - see
+    // lib/dom.js's pageType()/isPageTypeEnabled(). Defaults to all of
+    // them so this is additive: an existing install picks up the new
+    // setting with today's behavior unchanged until the user actually
+    // narrows it down in the popup.
+    enabledPageTypes: Object.freeze(['feed', 'discover', 'track', 'profile', 'playlist']),
   });
 
   function get() {

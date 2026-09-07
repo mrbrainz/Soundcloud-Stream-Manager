@@ -28,6 +28,12 @@
     // .sc-button.sc-button-secondary...
     container.className = CONTAINER_CLASS + ' sc-button-group sc-button-group-medium';
 
+    // 3px gap from SoundCloud's own like/repost/share row above, so the
+    // icon row visually separates from it instead of sitting flush
+    // against it (#68) - applies in BOTH insertion paths now; previously
+    // only the fallback path (no .soundActions) got any spacing at all.
+    container.style.marginTop = '3px';
+
     const soundActions = row.querySelector('.soundActions');
     if (soundActions) {
       // Sit immediately after SoundCloud's own like/repost/share row,
@@ -37,18 +43,18 @@
     } else {
       // Fallback for a page shape without that structure (e.g. a
       // simplified test fixture) - append directly to the row like before.
-      container.style.marginTop = '4px';
       row.appendChild(container);
     }
     return container;
   }
 
   // Builds one native-looking icon button for the row above: reuses
-  // SoundCloud's own sc-button classes for sizing/hover states, with a
-  // small colored-initial badge instead of a brand logo (avoids
-  // reproducing exact trademarked marks while still being far more
-  // scannable than a plain text label - #40).
-  function createIconButton({ extraClass, href, title, badgeText, badgeColor }) {
+  // SoundCloud's own sc-button classes for sizing/hover states. Prefers a
+  // real icon image (iconUrl) when given one - see extension/icons/services/
+  // (#68) - falling back to the colored-initial badge (badgeText/
+  // badgeColor) from #40 when a platform has no icon asset available yet,
+  // so nothing regresses to a blank button.
+  function createIconButton({ extraClass, href, title, badgeText, badgeColor, iconUrl }) {
     const link = document.createElement('a');
     link.className = 'sc-button sc-button-secondary sc-button-small sc-button-responsive' + (extraClass ? ' ' + extraClass : '');
     link.href = href;
@@ -62,21 +68,32 @@
     link.style.width = '28px';
     link.style.minWidth = '28px';
 
-    const badge = document.createElement('span');
-    badge.textContent = badgeText;
-    badge.style.display = 'inline-flex';
-    badge.style.alignItems = 'center';
-    badge.style.justifyContent = 'center';
-    badge.style.width = '16px';
-    badge.style.height = '16px';
-    badge.style.borderRadius = '50%';
-    badge.style.backgroundColor = badgeColor;
-    badge.style.color = '#fff';
-    badge.style.fontSize = '9px';
-    badge.style.fontWeight = 'bold';
-    badge.style.lineHeight = '1';
-    badge.setAttribute('aria-hidden', 'true');
-    link.appendChild(badge);
+    if (iconUrl) {
+      const img = document.createElement('img');
+      img.src = iconUrl;
+      img.alt = '';
+      img.style.width = '16px';
+      img.style.height = '16px';
+      img.style.borderRadius = '3px';
+      img.setAttribute('aria-hidden', 'true');
+      link.appendChild(img);
+    } else {
+      const badge = document.createElement('span');
+      badge.textContent = badgeText;
+      badge.style.display = 'inline-flex';
+      badge.style.alignItems = 'center';
+      badge.style.justifyContent = 'center';
+      badge.style.width = '16px';
+      badge.style.height = '16px';
+      badge.style.borderRadius = '50%';
+      badge.style.backgroundColor = badgeColor;
+      badge.style.color = '#fff';
+      badge.style.fontSize = '9px';
+      badge.style.fontWeight = 'bold';
+      badge.style.lineHeight = '1';
+      badge.setAttribute('aria-hidden', 'true');
+      link.appendChild(badge);
+    }
 
     // Don't let the click bubble into the row's own click-to-play handler.
     link.addEventListener('click', (e) => e.stopPropagation());

@@ -18,11 +18,11 @@ install steps, and [extension/README.md](../extension/README.md) for the
 extension's own directory breakdown.
 
 This replaced an older bookmarklet-based v1 that injected a floating panel
-onto the page and had decayed against SoundCloud's current frontend/API. That
-history lives on in `git log`, [`src/`](../src), [`index.html`](../index.html),
-and [`stylesheets/`](../stylesheets) as reference only — none of it is part of
-the active codebase. Don't assume v1's approach carries forward; the extension
-was built fresh, informed by the working Tampermonkey scripts in
+onto the page and had decayed against SoundCloud's current frontend/API. Its
+code (`src/scsm.js`, `javascripts/main.js`, the old Jekyll-theme stylesheets)
+was removed once the extension fully superseded it — it's still recoverable
+from `git log` if ever needed, but don't assume its approach carries forward;
+the extension was built fresh, informed by the working Tampermonkey scripts in
 [`references/`](../references) (see below), not by porting v1's code.
 
 ## Architecture
