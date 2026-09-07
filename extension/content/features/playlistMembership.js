@@ -75,6 +75,18 @@
     for (const [trackIdStr, playlists] of Object.entries(trackToPlaylists)) {
       await window.SCSMApi.setPlaylistsForTrackId(Number(trackIdStr), playlists);
     }
+
+    // The loop above only ever touches tracks that are STILL in at least
+    // one playlist - a track dropped from its only (or all) playlist(s)
+    // since the last crawl is simply absent from trackToPlaylists, so its
+    // stale non-empty membership would otherwise never get cleared, even
+    // across a page refresh (board card #33).
+    const previouslyTracked = await window.SCSMApi.getAllTrackIdsWithPlaylists();
+    for (const trackId of previouslyTracked) {
+      if (!trackToPlaylists[trackId]) {
+        await window.SCSMApi.setPlaylistsForTrackId(trackId, []);
+      }
+    }
   }
 
   // ---------- keep membership in sync with your own add/remove/create/delete ----------

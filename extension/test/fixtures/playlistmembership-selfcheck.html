@@ -99,12 +99,32 @@
         await wait(30);
         check('no badges before the feature is enabled', badgeTextIn('row-in-playlist'), null);
 
+        // ---- simulate a track that WAS in a playlist as of a previous session, ----
+        // but has since been removed from it entirely (not reflected in
+        // mocks/data.js's playlistsPage) - a fresh crawl must clear this
+        // stale membership, not just leave it alone because the track
+        // itself isn't mentioned in any playlist the crawl finds (board
+        // card #33 - this is exactly what didn't happen live, even across
+        // a page refresh).
+        await window.SCSMApi.resolveByPermalinkPath('/testartist/old-repost-track');
+        await window.SCSMApi.setPlaylistsForTrackId(1001, [{ id: 9999, title: 'Stale Playlist From Last Session' }]);
+        check(
+          'stale membership seeded before the crawl runs',
+          window.SCSMApi.getCachedByPermalinkPath('/testartist/old-repost-track').playlists,
+          [{ id: 9999, title: 'Stale Playlist From Last Session' }]
+        );
+
         await window.SCSMSettings.set({ showPlaylistMembership: true });
         await wait(250); // crawl (with its 250ms inter-page delay) + initial rescan/resolve
 
         check('a track in 2 playlists shows the ">1" label', badgeTextIn('row-in-playlist'), '✓ in 2 playlists');
         check('a track in exactly 1 playlist names it', badgeTextIn('row-recent-repost'), '✓ in "Techno 2026"');
         check('a track in no playlists gets no badge', badgeTextIn('row-old-repost'), null);
+        check(
+          'the crawl clears stale membership for a track no longer in ANY playlist',
+          window.SCSMApi.getCachedByPermalinkPath('/testartist/old-repost-track').playlists,
+          []
+        );
 
         // ---- idempotency: rescanning doesn't duplicate the badge ----
         window.SCSMDom.rescan();
