@@ -36,6 +36,9 @@
       <li class="soundList__item" id="row-not-downloadable">
         <a class="soundTitle__title" href="/testartist/long-mix">Long Mix Session</a>
       </li>
+      <li class="soundList__item" id="row-late-client-id">
+        <a class="soundTitle__title" href="/testartist/late-client-id-track">Late Client Id Track</a>
+      </li>
     </ul>
 
     <script src="/test/mocks/chrome-mock.js"></script>
@@ -145,6 +148,30 @@
         await window.SCSMSettings.set({ showDownloadButton: false });
         await wait(30);
         check('toggling off removes the button', document.querySelectorAll('.scsm-download-button').length, 0);
+
+        // ---- #83: the button renders on its OWN once client_id becomes available, no toggle off/on needed ----
+        // Reproduces the actual reported bug end-to-end: client_id isn't
+        // published yet (content/mainWorldBridge.js bridges it
+        // asynchronously) at the moment the feature is first enabled and
+        // runs its initial rescan() - before the fix, resolveByPermalinkPath()
+        // checked getClientId() once and gave up for good, so a track that
+        // genuinely IS downloadable rendered no button at all until some
+        // later event (the user's own workaround: toggling the setting off
+        // and back on) happened to re-trigger a resolve after client_id
+        // had caught up.
+        const originalClientId = document.documentElement.dataset.scsmClientId;
+        delete document.documentElement.dataset.scsmClientId;
+        await window.SCSMSettings.set({ showDownloadButton: true });
+        await wait(150); // one pass of evaluate() has already started (and is now waiting on lib/api.js's client_id poll) before client_id ever appears
+        check('the button has not rendered yet while client_id is still missing', buttonsIn('row-late-client-id').length, 0);
+
+        document.documentElement.dataset.scsmClientId = originalClientId; // simulates mainWorldBridge.js finally publishing it
+        await wait(150); // past lib/api.js's next 100ms poll tick
+        check(
+          'the button renders on its own once client_id appears - no toggle off/on needed',
+          buttonsIn('row-late-client-id').length,
+          1
+        );
 
         out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
         out.className = failures === 0 ? 'pass' : 'fail';
