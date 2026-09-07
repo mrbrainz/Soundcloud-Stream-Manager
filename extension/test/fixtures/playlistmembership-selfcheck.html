@@ -88,9 +88,17 @@
           const badge = document.getElementById(id).querySelector('.scsm-playlist-badge');
           return badge ? badge.textContent.trim() : null;
         }
-        function fireFakeXHR(method, url, bodyObj) {
+        function fireFakeXHR(method, url, bodyObj, opts) {
           const xhr = new XMLHttpRequest();
-          xhr.open(method, url);
+          // Regression for #33: SoundCloud's real frontend can pass a URL
+          // object (not a plain string) to .open() - browsers accept this
+          // natively. patchXHR() used to check `typeof url === 'string'`
+          // at read time in .send(), which silently dropped interception
+          // with zero errors when this happened. Exercising it here with
+          // `asUrlObject` proves the fix without needing a whole separate
+          // test scenario - if the caller's usual assertions still pass
+          // unchanged, the URL-object path works exactly like the string one.
+          xhr.open(method, opts && opts.asUrlObject ? new URL(url) : url);
           xhr.send(bodyObj ? JSON.stringify(bodyObj) : undefined);
           xhr.status = 200;
           xhr.dispatchEvent(new Event('load'));
@@ -136,9 +144,12 @@
         );
 
         // ---- live sync: adding old-repost-track to "My Favourites" (5001) via a PUT ----
-        fireFakeXHR('PUT', 'https://api-v2.soundcloud.com/playlists/5001', { playlist: { tracks: [1005, 1001] } });
+        // Uses a URL object for .open()'s url arg, not a plain string -
+        // see fireFakeXHR's comment. If this whole block's assertions
+        // still pass exactly as they would with a string, the fix works.
+        fireFakeXHR('PUT', 'https://api-v2.soundcloud.com/playlists/5001', { playlist: { tracks: [1005, 1001] } }, { asUrlObject: true });
         await wait(100);
-        check('adding a track to a playlist (PUT) badges it live', badgeTextIn('row-old-repost'), '✓ in "My Favourites"');
+        check('adding a track to a playlist (PUT) badges it live even when .open() got a URL object', badgeTextIn('row-old-repost'), '✓ in "My Favourites"');
         check(
           'the other member of that playlist is unaffected',
           badgeTextIn('row-in-playlist'),
