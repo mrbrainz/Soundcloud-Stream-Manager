@@ -16,6 +16,7 @@ window.__SCSM_MOCK_DATA__ = {
       created_at: '2023-01-15T10:00:00Z',
       duration: 210000, // 3:30
       downloadable: false,
+      genre: 'Trap',
       user: { username: 'Test Artist' },
     },
     // Recent repost — should NOT trip the age filter.
@@ -39,7 +40,23 @@ window.__SCSM_MOCK_DATA__ = {
       created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(), // 10 days ago
       duration: 32 * 60 * 1000, // 32 min
       downloadable: false,
+      genre: 'Techno',
       user: { username: 'Mix Master' },
+    },
+    // Original upload, short, recent, NOT in any playlist - trips ONLY the
+    // genre filter (case-mismatched on purpose: mock settings use "drum
+    // and bass" lowercase, this track's real genre string is
+    // "Drum & Bass" - the match has to be case-insensitive).
+    '/testartist/genre-track': {
+      id: 1007,
+      kind: 'track',
+      title: 'Genre Tagged Track',
+      permalink_url: 'https://soundcloud.com/testartist/genre-track',
+      created_at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(), // 3 hours ago
+      duration: 200000, // 3:20
+      downloadable: false,
+      genre: 'Drum & Bass',
+      user: { username: 'Test Artist' },
     },
     // Original upload, short + downloadable — happy path for the download
     // button and search-link features, should NOT trip either hide filter.

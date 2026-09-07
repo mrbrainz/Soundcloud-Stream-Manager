@@ -21,6 +21,8 @@
     hideLongTracks: false,
     hideLongTracksMinutes: 25,
     hideTracksInPlaylist: false,
+    hideGenres: false,
+    hiddenGenres: Object.freeze([]),
     showSearchLinks: false,
     showDownloadButton: false,
   });

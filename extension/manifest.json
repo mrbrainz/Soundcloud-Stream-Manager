@@ -42,7 +42,8 @@
         "content/features/searchLinks.js",
         "content/features/downloadButton.js",
         "content/features/playlistMembership.js",
-        "content/features/hideInPlaylistTracks.js"
+        "content/features/hideInPlaylistTracks.js",
+        "content/features/hideGenreTracks.js"
       ],
       "run_at": "document_idle",
       "all_frames": true

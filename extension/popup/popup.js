@@ -9,6 +9,7 @@
     'hideOldTracks',
     'hideLongTracks',
     'hideTracksInPlaylist',
+    'hideGenres',
     'showSearchLinks',
     'showDownloadButton',
   ];
@@ -35,6 +36,67 @@
       // to enable it first just to type a number. The dimmed style is a
       // "doesn't apply yet" hint only, not a block on editing.
       thresholdEl.classList.toggle('threshold--inactive', !settings[toggleId]);
+    });
+    renderGenreChips(settings.hiddenGenres);
+  }
+
+  // The hidden-genres chip list is fully derived from settings - re-render
+  // wholesale on every apply rather than diffing, same as everything else
+  // in this popup. Each chip's own "×" reads the CURRENT settings at click
+  // time (not a value captured at render time) so a rapid-fire series of
+  // removals still targets the right list.
+  function renderGenreChips(genres) {
+    const container = document.getElementById('hiddenGenreChips');
+    if (!container) return;
+    container.innerHTML = '';
+    (genres || []).forEach((genre) => {
+      const chip = document.createElement('span');
+      chip.className = 'genre-chip';
+
+      const label = document.createElement('span');
+      label.textContent = genre;
+      chip.appendChild(label);
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.textContent = '×';
+      removeBtn.setAttribute('aria-label', `Remove ${genre} from hidden genres`);
+      removeBtn.addEventListener('click', async () => {
+        const settings = await window.SCSMSettings.get();
+        const next = (settings.hiddenGenres || []).filter((g) => g !== genre);
+        window.SCSMSettings.set({ hiddenGenres: next });
+      });
+      chip.appendChild(removeBtn);
+
+      container.appendChild(chip);
+    });
+  }
+
+  function initGenreInput() {
+    const input = document.getElementById('hiddenGenreInput');
+    const addBtn = document.getElementById('hiddenGenreAdd');
+    if (!input || !addBtn) return;
+
+    async function addGenre() {
+      const value = input.value.trim();
+      if (!value) return;
+      const settings = await window.SCSMSettings.get();
+      const existing = settings.hiddenGenres || [];
+      // Case-insensitive de-dupe - "Techno" and "techno" shouldn't both
+      // end up in the list as separate entries.
+      const alreadyThere = existing.some((g) => g.toLowerCase() === value.toLowerCase());
+      if (!alreadyThere) {
+        await window.SCSMSettings.set({ hiddenGenres: [...existing, value] });
+      }
+      input.value = '';
+    }
+
+    addBtn.addEventListener('click', addGenre);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addGenre();
+      }
     });
   }
 
@@ -92,5 +154,6 @@
   }
 
   init();
+  initGenreInput();
   initHoverEasterEgg();
 })();

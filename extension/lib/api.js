@@ -94,6 +94,7 @@
       // preference, not just a label-specific special case.
       artist: (track.publisher_metadata && track.publisher_metadata.artist) || (track.user && track.user.username) || null,
       permalinkPath: path,
+      genre: track.genre || null,
       createdAt: track.created_at || track.display_date || null,
       duration: typeof track.duration === 'number' ? track.duration : null,
       downloadable: !!track.downloadable,
