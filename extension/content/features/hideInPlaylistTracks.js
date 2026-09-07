@@ -14,9 +14,8 @@
   const REASON = 'in-playlist';
   let enabled = false;
 
-  function labelFor(track, anchor) {
-    const title = (track && track.title) || anchor.textContent.trim();
-    return `${title} — hidden: already in a playlist`;
+  function titleFor(track, anchor) {
+    return (track && track.title) || anchor.textContent.trim();
   }
 
   async function evaluate(anchor) {
@@ -34,12 +33,14 @@
       // to override this shouldn't have it immediately re-minimized by the
       // rescan that click itself triggers.
       if (window.SCSMRowState.isDismissed(row, REASON)) return;
-      window.SCSMRowState.minimize(row, labelFor(track, anchor), { reason: REASON });
-    } else if (window.SCSMRowState.isMinimized(row) && row.dataset.scsmMinimizeReason === REASON) {
+      window.SCSMRowState.minimize(row, titleFor(track, anchor), { reason: REASON, reasonText: 'already in a playlist' });
+    } else if (window.SCSMRowState.isMinimized(row)) {
       // The track was removed from every playlist since this row was last
       // evaluated (playlistMembership.js's live sync updated the cache and
-      // triggered a rescan) - it no longer qualifies, put it back.
-      window.SCSMRowState.restore(row);
+      // triggered a rescan) - it no longer qualifies. Drop just this
+      // filter's reason; if another filter's reason is still active, the
+      // row stays hidden under that one.
+      window.SCSMRowState.unapplyReason(row, REASON);
     }
   }
 
@@ -51,8 +52,10 @@
   }
 
   function restoreOwnRows() {
-    document.querySelectorAll(`[data-scsm-minimize-reason="${REASON}"]`).forEach((row) => window.SCSMRowState.restore(row));
-    document.querySelectorAll(`[data-scsm-dismissed-reason="${REASON}"]`).forEach((row) => window.SCSMRowState.clearDismissed(row));
+    // ~= matches one whitespace-separated token in the attribute - a row
+    // can carry more than one filter's reason key at once (#64).
+    document.querySelectorAll(`[data-scsm-reason-keys~="${REASON}"]`).forEach((row) => window.SCSMRowState.unapplyReason(row, REASON));
+    document.querySelectorAll(`[data-scsm-dismissed-reasons~="${REASON}"]`).forEach((row) => window.SCSMRowState.clearDismissed(row, REASON));
   }
 
   async function applySetting(settings) {

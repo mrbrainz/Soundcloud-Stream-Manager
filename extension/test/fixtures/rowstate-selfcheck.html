@@ -16,7 +16,10 @@
     <p class="fixture-note">
       Exercises <code>lib/rowState.js</code>'s minimize/show treatment in
       isolation (no feed/API mocking needed - it only touches whatever row
-      element it's given). See <a href="../README.md">test/README.md</a>.
+      element it's given), including its multi-reason tracking (#64: a row
+      matching more than one hide filter at once must stay hidden until
+      EVERY filter's reason has cleared, and "show" must dismiss all of
+      them at once). See <a href="../README.md">test/README.md</a>.
     </p>
     <div id="results">running…</div>
 
@@ -24,6 +27,9 @@
       <li class="soundList__item" id="row-a">
         <a class="soundTitle__title" href="/testartist/old-repost-track">Old Repost Track</a>
         <span class="extra-child">some other row content</span>
+      </li>
+      <li class="soundList__item" id="row-b">
+        <a class="soundTitle__title" href="/testartist/long-mix">Long Mix Session</a>
       </li>
     </ul>
 
@@ -48,13 +54,13 @@
 
         check('isMinimized() is false before minimizing', window.SCSMRowState.isMinimized(row), false);
 
-        window.SCSMRowState.minimize(row, 'Old Repost Track — 2y old', { reason: 'old' });
+        window.SCSMRowState.minimize(row, 'Old Repost Track', { reason: 'old', reasonText: '2y old' });
         check('isMinimized() is true after minimizing', window.SCSMRowState.isMinimized(row), true);
-        check('minimize reason is recorded', row.dataset.scsmMinimizeReason, 'old');
+        check('the reason key is recorded', row.dataset.scsmReasonKeys, 'old');
 
         const summary = row.querySelector(':scope > .scsm-row-summary');
         check('a summary line is rendered', !!summary, true);
-        check('the summary shows the given label', summary && summary.textContent.includes('Old Repost Track — 2y old'), true);
+        check('the summary combines the title and reason text', summary && summary.textContent.includes('Old Repost Track — hidden: 2y old'), true);
         check('the summary includes a show link', !!(summary && summary.querySelector('.scsm-row-show-link')), true);
 
         const wrapper = row.querySelector(':scope > .scsm-row-original');
@@ -62,37 +68,85 @@
         check('original content is preserved inside the wrapper', wrapper && wrapper.children.length, originalChildCount);
         check('the visible anchor is gone once minimized', !!row.querySelector(':scope > a.soundTitle__title'), false);
 
-        // ---- idempotency: minimizing an already-minimized row updates the label, doesn't duplicate it ----
-        window.SCSMRowState.minimize(row, 'Old Repost Track — 2y1mo old', { reason: 'old' });
+        // ---- idempotency: minimizing again for the SAME reason updates the label, doesn't duplicate it ----
+        window.SCSMRowState.minimize(row, 'Old Repost Track', { reason: 'old', reasonText: '2y1mo old' });
         check('minimizing again does not add a second summary', row.querySelectorAll(':scope > .scsm-row-summary').length, 1);
-        check('minimizing again updates the label', row.querySelector('.scsm-row-summary-text').textContent, 'Old Repost Track — 2y1mo old');
+        check('minimizing again updates the label', row.querySelector('.scsm-row-summary-text').textContent, 'Old Repost Track — hidden: 2y1mo old');
 
-        // ---- clicking "show" restores the row AND marks it dismissed ----
-        // (the dismissal is what stops a feature from immediately
-        // re-minimizing it on the rescan restore() itself triggers - see
-        // the "hidden track's show link doesn't restore the row" bug)
+        // ---- #64: a SECOND filter's reason on the SAME row combines into one label instead of overwriting ----
+        window.SCSMRowState.minimize(row, 'Old Repost Track', { reason: 'long', reasonText: 'longer than 25 minutes' });
+        check('a second reason does not add a second summary either', row.querySelectorAll(':scope > .scsm-row-summary').length, 1);
+        check(
+          'the label combines BOTH reasons instead of the second overwriting the first',
+          row.querySelector('.scsm-row-summary-text').textContent,
+          'Old Repost Track — hidden: 2y1mo old, longer than 25 minutes'
+        );
+        check('both reason keys are now recorded', row.dataset.scsmReasonKeys, 'old long');
+
+        // ---- #64: one filter clearing ITS OWN reason leaves the row hidden under the other's ----
+        window.SCSMRowState.unapplyReason(row, 'old');
+        check('the row stays minimized while another reason is still active', window.SCSMRowState.isMinimized(row), true);
+        check('the label drops the cleared reason but keeps the other', row.querySelector('.scsm-row-summary-text').textContent, 'Old Repost Track — hidden: longer than 25 minutes');
+        check('only the remaining reason key is recorded', row.dataset.scsmReasonKeys, 'long');
+
+        // ---- unapplying the LAST remaining reason fully restores the row ----
+        window.SCSMRowState.unapplyReason(row, 'long');
+        check('unapplying the last reason restores the row', window.SCSMRowState.isMinimized(row), false);
+        check('restoring puts back exactly the original children', row.children.length, originalChildCount);
+
+        // ---- unapplying a reason that isn't actually active is a harmless no-op ----
+        window.SCSMRowState.minimize(row, 'Old Repost Track', { reason: 'old', reasonText: '2y old' });
+        window.SCSMRowState.unapplyReason(row, 'long'); // never applied on this cycle
+        check('unapplying an inactive reason does not restore the row', window.SCSMRowState.isMinimized(row), true);
+        check('unapplying an inactive reason leaves the active one untouched', row.dataset.scsmReasonKeys, 'old');
+        window.SCSMRowState.restore(row);
+
+        // ---- #64: clicking "show" with TWO active reasons dismisses BOTH at once, so the row actually stays shown ----
+        window.SCSMRowState.minimize(row, 'Old Repost Track', { reason: 'old', reasonText: '2y old' });
+        window.SCSMRowState.minimize(row, 'Old Repost Track', { reason: 'long', reasonText: 'longer than 25 minutes' });
         row.querySelector('.scsm-row-show-link').click();
         check('isMinimized() is false after clicking show', window.SCSMRowState.isMinimized(row), false);
         check('the summary is removed after restoring', !!row.querySelector(':scope > .scsm-row-summary'), false);
         check('the original anchor is back after restoring', !!row.querySelector(':scope > a.soundTitle__title'), true);
-        check('restoring puts back exactly the original children', row.children.length, originalChildCount);
-        check('clicking show marks the row dismissed for its reason', window.SCSMRowState.isDismissed(row, 'old'), true);
-        check('isDismissed() is false for a different reason', window.SCSMRowState.isDismissed(row, 'long'), false);
+        check('clicking show dismisses the FIRST reason', window.SCSMRowState.isDismissed(row, 'old'), true);
+        check('clicking show ALSO dismisses the second reason, not just one', window.SCSMRowState.isDismissed(row, 'long'), true);
+        check('isDismissed() is false for a reason that was never active', window.SCSMRowState.isDismissed(row, 'in-playlist'), false);
 
-        window.SCSMRowState.clearDismissed(row);
-        check('clearDismissed() removes the dismissal', window.SCSMRowState.isDismissed(row, 'old'), false);
+        // ---- #64: with both reasons dismissed, BOTH filters re-evaluating leaves the row visible ----
+        // (this is the actual end-to-end regression: before the fix, the
+        // second filter's minimize() call here would re-hide the row right
+        // back, because only ONE reason was ever recorded as dismissed.)
+        if (!window.SCSMRowState.isDismissed(row, 'old')) window.SCSMRowState.minimize(row, 'Old Repost Track', { reason: 'old', reasonText: '2y old' });
+        if (!window.SCSMRowState.isDismissed(row, 'long')) window.SCSMRowState.minimize(row, 'Old Repost Track', { reason: 'long', reasonText: 'longer than 25 minutes' });
+        check('after "show" dismissed both reasons, both filters re-evaluating still leaves the row visible', window.SCSMRowState.isMinimized(row), false);
+
+        // ---- clearDismissed(row, reason) clears only ONE filter's dismissal, not every filter's ----
+        window.SCSMRowState.clearDismissed(row, 'old');
+        check('clearDismissed(row, "old") removes just that dismissal', window.SCSMRowState.isDismissed(row, 'old'), false);
+        check('clearDismissed(row, "old") leaves the other filter\'s dismissal alone', window.SCSMRowState.isDismissed(row, 'long'), true);
+        window.SCSMRowState.clearDismissed(row, 'long');
+        check('clearing the second dismissal too leaves none active', window.SCSMRowState.isDismissed(row, 'long'), false);
+
+        // ---- a PROGRAMMATIC restore (not via the show link) does NOT dismiss ----
+        // a filter calling restore() itself (e.g. a threshold change the
+        // row no longer matches) isn't a user override, so it shouldn't
+        // block that same filter from re-minimizing the row later.
+        window.SCSMRowState.minimize(row, 'Old Repost Track re-minimized', { reason: 'old', reasonText: '2y old' });
+        window.SCSMRowState.restore(row);
+        check('a direct restore() call does not mark the row dismissed', window.SCSMRowState.isDismissed(row, 'old'), false);
 
         // ---- restoring an already-restored row is a no-op ----
         window.SCSMRowState.restore(row);
         check('restoring an already-restored row does not throw or change child count', row.children.length, originalChildCount);
 
-        // ---- a PROGRAMMATIC restore (not via the show link) does NOT dismiss ----
-        // a feature calling restore() itself (e.g. a threshold change the
-        // row no longer matches) isn't a user override, so it shouldn't
-        // block that same feature from re-minimizing the row later.
-        window.SCSMRowState.minimize(row, 'Old Repost Track re-minimized', { reason: 'old' });
+        // ---- two DIFFERENT rows track their reasons independently ----
+        const rowB = document.getElementById('row-b');
+        window.SCSMRowState.minimize(row, 'Old Repost Track', { reason: 'old', reasonText: '2y old' });
+        window.SCSMRowState.minimize(rowB, 'Long Mix Session', { reason: 'long', reasonText: 'longer than 25 minutes' });
+        check('row A only has its own reason', row.dataset.scsmReasonKeys, 'old');
+        check('row B only has its own reason', rowB.dataset.scsmReasonKeys, 'long');
         window.SCSMRowState.restore(row);
-        check('a direct restore() call does not mark the row dismissed', window.SCSMRowState.isDismissed(row, 'old'), false);
+        window.SCSMRowState.restore(rowB);
 
         out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
         out.className = failures === 0 ? 'pass' : 'fail';
