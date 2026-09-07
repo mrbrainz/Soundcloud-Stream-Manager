@@ -41,6 +41,28 @@
       </li>
     </ul>
 
+    <!-- Live-verified (#82): a whole playlist embedded in the feed lists
+         its tracks with this compact soundBadge markup, not
+         li.soundList__item. Points at a track that genuinely IS
+         downloadable (short-downloadable-track) so the only thing that
+         could suppress the button here is the playlist-in-feed exclusion
+         itself, not a real "not downloadable" result. -->
+    <ul class="soundBadgeList" id="playlist-in-feed">
+      <li class="soundBadgeList__item">
+        <div class="soundBadge compact sc-media playlist">
+          <div class="soundBadge__content">
+            <div class="soundTitle">
+              <div class="soundTitle__titleContainer">
+                <div class="soundTitle__usernameTitleContainer">
+                  <a class="soundTitle__title" href="/testartist/short-downloadable-track">Short Downloadable Track</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </li>
+    </ul>
+
     <script src="/test/mocks/chrome-mock.js"></script>
     <script src="/test/mocks/data.js"></script>
     <script src="/test/mocks/sc-api-mock.js"></script>
@@ -81,6 +103,11 @@
 
         check('a downloadable track gets the button', buttonsIn('row-downloadable').length, 1);
         check('a non-downloadable track gets no button', buttonsIn('row-not-downloadable').length, 0);
+        check(
+          'the download button does not render on a playlist embedded in the feed, even for a genuinely downloadable track (#82)',
+          document.querySelectorAll('#playlist-in-feed .scsm-download-button').length,
+          0
+        );
 
         const link = buttonsIn('row-downloadable')[0];
         check(
