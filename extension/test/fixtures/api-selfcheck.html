@@ -27,6 +27,11 @@
     <script src="/content/mainWorldBridge.js"></script>
     <script src="/lib/settings.js"></script>
     <script src="/lib/auth.js"></script>
+    <script>
+      // #85 regression: shrink the fetch timeout from its real 15s to
+      // something a test suite can actually wait out.
+      window.__SCSM_TEST_FETCH_TIMEOUT_MS = 300;
+    </script>
     <script src="/lib/api.js"></script>
     <script>
       (async function () {
@@ -157,6 +162,29 @@
         document.documentElement.dataset.scsmClientId = originalClientId; // simulates mainWorldBridge.js finally publishing it
         const genreTrack = await genreTrackPromise;
         check('a resolve started with no client_id yet still succeeds once one appears, instead of returning null', genreTrack && genreTrack.id, 1007);
+
+        // ---- #85: a request that never settles times out and frees its queue slot, instead of wedging every other call forever ----
+        // Live-verified: SoundCloud's /tracks/{id}/download left a request
+        // permanently pending (no response, ever). Since resolveByPermalinkPath/
+        // getTrackById/getDownloadRedirectUrl all share ONE MAX_CONCURRENT=3
+        // queue, 3 such requests would occupy every slot forever and nothing
+        // queued behind them - for ANY feature - would ever run. Fill all 3
+        // slots with hanging requests, then queue one more (normal, working)
+        // call behind them: without the fetch timeout, that 4th call would
+        // never even start.
+        const hangs = [
+          window.SCSMApi.getDownloadRedirectUrl(1009),
+          window.SCSMApi.getDownloadRedirectUrl(1010),
+          window.SCSMApi.getDownloadRedirectUrl(1011),
+        ];
+        const queuedBehindThem = window.SCSMApi.getDownloadRedirectUrl(1004);
+        const [hangResults, queuedResult] = await Promise.all([Promise.all(hangs), queuedBehindThem]);
+        check('a request that never settles times out to null instead of hanging the caller forever', hangResults, [null, null, null]);
+        check(
+          'a normal request queued behind 3 hung ones still completes once they time out and free their slots',
+          queuedResult,
+          'https://cf-media.sndcdn.com/mock-signed-download-1004'
+        );
 
         out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
         out.className = failures === 0 ? 'pass' : 'fail';

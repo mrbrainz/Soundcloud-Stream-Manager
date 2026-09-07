@@ -199,6 +199,26 @@
     return null;
   }
 
+  // resolveByPermalinkPath/getTrackById/getDownloadRedirectUrl all funnel
+  // through the SAME MAX_CONCURRENT-limited queue above - live-verified
+  // (#85) that SoundCloud's API can leave a request permanently pending
+  // (never resolving, never rejecting, no HTTP response at all - looked
+  // like anti-bot throttling under the bursty concurrent-resolve pattern
+  // every feature's initial rescan produces). A plain fetch() has no
+  // built-in timeout, so a single stuck request would occupy one of only
+  // 3 concurrency slots FOREVER, and everything queued behind it - across
+  // every feature - would simply never run. Abort and free the slot
+  // instead, treating it the same as any other failed request.
+  // Overridable by test fixtures (set window.__SCSM_TEST_FETCH_TIMEOUT_MS
+  // before this file loads) so a regression test can prove the timeout
+  // actually frees a wedged queue slot without a real 15s wait.
+  const FETCH_TIMEOUT_MS = window.__SCSM_TEST_FETCH_TIMEOUT_MS || 15000;
+  function fetchWithTimeout(url, options) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
+  }
+
   async function resolveByPermalinkPath(path) {
     await load();
     const cached = cachedEntry(path);
@@ -208,7 +228,7 @@
       const clientId = await waitForClientId();
       if (!clientId) return null;
       const url = 'https://soundcloud.com' + path;
-      const res = await fetch(`${API_BASE}/resolve?url=${encodeURIComponent(url)}&client_id=${clientId}`, {
+      const res = await fetchWithTimeout(`${API_BASE}/resolve?url=${encodeURIComponent(url)}&client_id=${clientId}`, {
         credentials: 'omit',
       });
       if (!res.ok) return null;
@@ -228,7 +248,7 @@
     return dedupe('id:' + id, async () => {
       const clientId = await waitForClientId();
       if (!clientId) return null;
-      const res = await fetch(`${API_BASE}/tracks/${id}?client_id=${clientId}&app_locale=en`, {
+      const res = await fetchWithTimeout(`${API_BASE}/tracks/${id}?client_id=${clientId}&app_locale=en`, {
         credentials: 'include',
         headers: window.SCSMAuth.authHeaders(),
       });
@@ -276,7 +296,7 @@
     return dedupe('download:' + trackId, async () => {
       const clientId = await waitForClientId();
       if (!clientId) return null;
-      const res = await fetch(`${API_BASE}/tracks/${trackId}/download?client_id=${clientId}`, {
+      const res = await fetchWithTimeout(`${API_BASE}/tracks/${trackId}/download?client_id=${clientId}`, {
         credentials: 'include',
         headers: window.SCSMAuth.authHeaders(),
       });
