@@ -2,11 +2,10 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>SCSM mock fixture — popup UI self-check</title>
     <link rel="stylesheet" href="/popup/popup.css" />
     <style>
-      .fixture-note { color: #888; font-size: 12px; font-family: sans-serif; max-width: 640px; }
-      #results { font-family: monospace; white-space: pre-wrap; }
+      .fixture-note { color: #888; font-size: 12px; font-family: sans-serif; max-width: 640px; background: #fff; padding: 8px; }
+      #results { font-family: monospace; white-space: pre-wrap; background: #fff; padding: 8px; }
       .pass { color: #1a7f37; }
       .fail { color: #cf222e; }
     </style>
@@ -21,37 +20,68 @@
       session's browser tooling, so this is how popup.js gets verified.
     </p>
 
-    <h1>Soundcloud Stream Manager</h1>
+    <div class="popup">
+      <header class="pop-head">
+        <div class="titleblock" id="titleblock">
+          <h1 class="brand">SCSM 💀</h1>
+        </div>
+      </header>
 
-    <div class="feature">
-      <label><input type="checkbox" id="showRepostAge"> Show repost age</label>
+      <div class="rows">
+        <div class="row">
+          <div class="row-text">
+            <label class="row-title" for="showRepostAge">repost age check</label>
+          </div>
+          <label class="toggle"><input type="checkbox" id="showRepostAge"><span class="knob"></span></label>
+        </div>
+
+        <div class="row">
+          <div class="row-text">
+            <label class="row-title" for="showPlaylistMembership">playlist receipts</label>
+          </div>
+          <label class="toggle"><input type="checkbox" id="showPlaylistMembership"><span class="knob"></span></label>
+        </div>
+
+        <div class="row">
+          <div class="row-text">
+            <label class="row-title" for="hideOldTracks">delete the ancient ones</label>
+            <div class="stepper"><input type="number" id="hideOldTracksDays" class="threshold" min="1"> <span>days deep</span></div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="hideOldTracks"><span class="knob"></span></label>
+        </div>
+
+        <div class="row">
+          <div class="row-text">
+            <label class="row-title" for="hideLongTracks">no snooze tracks</label>
+            <div class="stepper"><input type="number" id="hideLongTracksMinutes" class="threshold" min="1"> <span>min cap</span></div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="hideLongTracks"><span class="knob"></span></label>
+        </div>
+
+        <div class="row">
+          <div class="row-text">
+            <label class="row-title" for="hideTracksInPlaylist">already got it</label>
+          </div>
+          <label class="toggle"><input type="checkbox" id="hideTracksInPlaylist"><span class="knob"></span></label>
+        </div>
+
+        <div class="row">
+          <div class="row-text">
+            <label class="row-title" for="showSearchLinks">find it everywhere</label>
+          </div>
+          <label class="toggle"><input type="checkbox" id="showSearchLinks"><span class="knob"></span></label>
+        </div>
+
+        <div class="row">
+          <div class="row-text">
+            <label class="row-title" for="showDownloadButton">yoink button</label>
+          </div>
+          <label class="toggle"><input type="checkbox" id="showDownloadButton"><span class="knob"></span></label>
+        </div>
+      </div>
     </div>
 
-    <div class="feature">
-      <label><input type="checkbox" id="showPlaylistMembership"> Show playlist membership</label>
-    </div>
-
-    <div class="feature">
-      <label><input type="checkbox" id="hideOldTracks"> Hide tracks older than</label>
-      <input type="number" id="hideOldTracksDays" class="threshold" min="1"> days
-    </div>
-
-    <div class="feature">
-      <label><input type="checkbox" id="hideLongTracks"> Hide tracks longer than</label>
-      <input type="number" id="hideLongTracksMinutes" class="threshold" min="1"> minutes
-    </div>
-
-    <div class="feature">
-      <label><input type="checkbox" id="hideTracksInPlaylist"> Hide tracks already in a playlist</label>
-    </div>
-
-    <div class="feature">
-      <label><input type="checkbox" id="showSearchLinks"> Show search links (Deezer, Apple Music, Beatport, Spotify)</label>
-    </div>
-
-    <div class="feature">
-      <label><input type="checkbox" id="showDownloadButton"> Show legacy download button</label>
-    </div>
+    <img id="hoverEasterEgg" class="hover-easter-egg" src="/popup/images/fellow-kids.webp" alt="" hidden>
 
     <div id="results">running…</div>
 
@@ -105,6 +135,15 @@
         await new Promise((resolve) => setTimeout(resolve, 20));
         const afterToggle = await window.SCSMSettings.get();
         check('checking a toggle calls SCSMSettings.set()', afterToggle.showRepostAge, true);
+        // Not asserted via getComputedStyle: .row's border-color/box-shadow
+        // are CSS transitions, so a synchronous read right after the
+        // checkbox flips can still report the pre-transition value. The
+        // :has() match itself is the actual state the styling reacts to.
+        check(
+          'the row\'s :has() selector picks up the checked toggle (drives the "on" styling)',
+          repostAge.closest('.row').matches(':has(.toggle input:checked)'),
+          true
+        );
 
         // ---- checking hideOldTracks removes its threshold's "inactive" style ----
         const hideOld = document.getElementById('hideOldTracks');
@@ -144,6 +183,17 @@
         await new Promise((resolve) => setTimeout(resolve, 20));
         const afterHideInPlaylist = await window.SCSMSettings.get();
         check('checking hideTracksInPlaylist persists to settings', afterHideInPlaylist.hideTracksInPlaylist, true);
+
+        // ---- #51 hover easter egg: hovering the title shows/follows/hides the image ----
+        const egg = document.getElementById('hoverEasterEgg');
+        check('the easter-egg image starts hidden', egg.hidden, true);
+        document.getElementById('titleblock').dispatchEvent(new MouseEvent('mouseenter', { bubbles: true, clientX: 50, clientY: 60 }));
+        check('hovering the title unhides the easter-egg image', egg.hidden, false);
+        document.getElementById('titleblock').dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 120, clientY: 200 }));
+        check('the easter-egg image tracks the cursor (left)', egg.style.left, '132px');
+        check('the easter-egg image tracks the cursor (top)', egg.style.top, '212px');
+        document.getElementById('titleblock').dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+        check('leaving the title hides the easter-egg image again', egg.hidden, true);
 
         out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
         out.className = failures === 0 ? 'pass' : 'fail';
