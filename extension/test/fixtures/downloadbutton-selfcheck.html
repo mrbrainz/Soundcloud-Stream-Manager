@@ -26,6 +26,12 @@
     <ul>
       <li class="soundList__item" id="row-downloadable">
         <a class="soundTitle__title" href="/testartist/short-downloadable-track">Short Downloadable Track</a>
+        <!-- Mimics SoundCloud's real like/repost/share button row (#40) -->
+        <div class="soundActions sc-button-toolbar">
+          <div class="sc-button-group sc-button-group-medium">
+            <button class="sc-button sc-button-like sc-button-secondary">Like</button>
+          </div>
+        </div>
       </li>
       <li class="soundList__item" id="row-not-downloadable">
         <a class="soundTitle__title" href="/testartist/long-mix">Long Mix Session</a>
@@ -80,13 +86,31 @@
           'https://cf-media.sndcdn.com/mock-signed-download-1004'
         );
         check('the link opens in a new tab', link.target, '_blank');
+        check('the button reuses SoundCloud\'s own sc-button classes for native styling', link.classList.contains('sc-button-secondary'), true);
+        check('the button shows a download glyph, not a text label', link.textContent.trim(), '↓');
+        const soundActions = document.querySelector('#row-downloadable .soundActions');
+        check(
+          'the icon row is inserted immediately after .soundActions when present',
+          soundActions.nextElementSibling && soundActions.nextElementSibling.classList.contains('scsm-icon-row'),
+          true
+        );
 
         // ---- the download endpoint genuinely requires OAuth, not just client_id ----
-        // (live-verified #38: a plain client_id 401s on the real API)
-        const savedCookie = document.cookie;
-        document.cookie = 'oauth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-        const redirectWithoutOauth = await window.SCSMApi.getDownloadRedirectUrl(1004);
-        document.cookie = savedCookie || 'oauth_token=mock-oauth-token; path=/';
+        // (live-verified #38: a plain client_id 401s on the real API).
+        // Stubs SCSMAuth.authHeaders() directly instead of deleting the
+        // oauth_token cookie - clearing the cookie proved flaky in this
+        // sandboxed browser (intermittently didn't take effect before the
+        // very next synchronous read, for reasons unrelated to the actual
+        // extension code), so this tests the same real code path - no
+        // Authorization header reaching the mock - without depending on
+        // that browser cookie-jar timing. Also uses a separate,
+        // otherwise-untouched track id (9999) so there's no ambiguity with
+        // lib/api.js's dedupe/inflight tracking for 1004 from the
+        // button-render step above.
+        const originalAuthHeaders = window.SCSMAuth.authHeaders;
+        window.SCSMAuth.authHeaders = () => ({});
+        const redirectWithoutOauth = await window.SCSMApi.getDownloadRedirectUrl(9999);
+        window.SCSMAuth.authHeaders = originalAuthHeaders;
         check('getDownloadRedirectUrl returns null without a real OAuth token', redirectWithoutOauth, null);
 
         // ---- idempotency ----

@@ -26,6 +26,15 @@
     <ul>
       <li class="soundList__item" id="row-dl">
         <a class="soundTitle__title" href="/testartist/short-downloadable-track">Short Downloadable Track</a>
+        <!-- Mimics SoundCloud's real like/repost/share button row (#40) so
+             the icon row's "insert right after it" placement can be
+             exercised - row-old-original below deliberately omits this to
+             keep the no-soundActions fallback path covered too. -->
+        <div class="soundActions sc-button-toolbar">
+          <div class="sc-button-group sc-button-group-medium">
+            <button class="sc-button sc-button-like sc-button-secondary">Like</button>
+          </div>
+        </div>
       </li>
       <li class="soundList__item" id="row-old-original">
         <a class="soundTitle__title" href="/testartist/in-playlist-track">In Playlist Track</a>
@@ -88,6 +97,16 @@
           'www.beatport.com',
           'open.spotify.com',
         ]);
+
+        // ---- placement: the icon row sits right after SoundCloud's own action row, not floating below the card ----
+        const soundActions = document.querySelector('#row-dl .soundActions');
+        check(
+          'the icon row is inserted immediately after .soundActions when present',
+          soundActions.nextElementSibling && soundActions.nextElementSibling.classList.contains('scsm-icon-row'),
+          true
+        );
+        check('links reuse SoundCloud\'s own sc-button classes for native styling', deezerLink.classList.contains('sc-button-secondary'), true);
+        check('a link shows a colored-initial badge, not a raw text label', deezerLink.textContent.trim(), 'D');
 
         // ---- dedupe: a title that already contains the artist name shouldn't repeat it ----
         // label-track (mocks/data.js): title "Neumonic - Massive", artist

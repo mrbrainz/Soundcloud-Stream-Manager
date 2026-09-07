@@ -24,17 +24,13 @@
     const container = window.SCSMIconRow.getOrCreateIconRow(row);
     if (container.querySelector('.' + BTN_CLASS)) return; // idempotent
 
-    const link = document.createElement('a');
-    link.className = BTN_CLASS;
-    link.href = redirectUrl;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    link.textContent = 'Download';
-    link.title = 'Download (legacy)';
-    link.style.marginRight = '8px';
-    link.style.fontSize = '11px';
-    link.style.opacity = '0.7';
-    link.addEventListener('click', (e) => e.stopPropagation());
+    const link = window.SCSMIconRow.createIconButton({
+      extraClass: BTN_CLASS,
+      href: redirectUrl,
+      title: 'Download (legacy)',
+      badgeText: '↓', // down arrow - not a platform logo, just a download glyph
+      badgeColor: '#64748B',
+    });
     container.appendChild(link);
   }
 
