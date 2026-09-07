@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SCSM mock fixture — hide-genre-tracks feature self-check</title>
+    <style>
+      body { font-family: sans-serif; max-width: 640px; margin: 24px auto; }
+      .fixture-note { color: #888; font-size: 12px; }
+      #results { font-family: monospace; white-space: pre-wrap; }
+      .pass { color: #1a7f37; }
+      .fail { color: #cf222e; }
+      li.soundList__item { border: 1px solid #ddd; padding: 8px; margin-bottom: 6px; }
+    </style>
+  </head>
+  <body>
+    <p class="fixture-note">
+      Exercises "hide tracks by genre" (#53) end-to-end: toggling
+      <code>hideGenres</code>/<code>hiddenGenres</code> via
+      <code>lib/settings.js</code> and confirming
+      <code>content/features/hideGenreTracks.js</code> minimizes (and
+      restores) the right rows, case-insensitively, and reacts to the
+      hidden-genre LIST changing (not just a single threshold number). See
+      <a href="../README.md">test/README.md</a>.
+    </p>
+    <div id="results">running…</div>
+
+    <ul>
+      <li class="soundList__item" id="row-genre">
+        <a class="soundTitle__title" href="/testartist/genre-track">Genre Tagged Track</a>
+      </li>
+      <li class="soundList__item" id="row-other-genre">
+        <a class="soundTitle__title" href="/testartist/old-repost-track">Old Repost Track</a>
+      </li>
+    </ul>
+
+    <script src="/test/mocks/chrome-mock.js"></script>
+    <script src="/test/mocks/data.js"></script>
+    <script src="/test/mocks/sc-api-mock.js"></script>
+    <script src="/content/mainWorldBridge.js"></script>
+    <script src="/lib/settings.js"></script>
+    <script src="/lib/auth.js"></script>
+    <script src="/lib/api.js"></script>
+    <script src="/lib/dom.js"></script>
+    <script src="/lib/rowState.js"></script>
+    <script src="/content/features/hideGenreTracks.js"></script>
+    <script>
+      (async function () {
+        const out = document.getElementById('results');
+        const lines = [];
+        let failures = 0;
+
+        function check(label, actual, expected) {
+          const ok = JSON.stringify(actual) === JSON.stringify(expected);
+          if (!ok) failures++;
+          lines.push(
+            `${ok ? 'PASS' : 'FAIL'} ${label}` +
+              (ok ? '' : ` — expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`)
+          );
+        }
+        function wait(ms) {
+          return new Promise((resolve) => setTimeout(resolve, ms));
+        }
+        function minimized(id) {
+          return window.SCSMRowState.isMinimized(document.getElementById(id));
+        }
+
+        await wait(30);
+        check('nothing minimized before the feature is enabled', minimized('row-genre'), false);
+
+        // genre-track's real genre is "Drum & Bass" (mocks/data.js) - the
+        // configured hidden genre is deliberately differently-cased AND
+        // includes an unrelated genre never present in this fixture.
+        await window.SCSMSettings.set({ hideGenres: true, hiddenGenres: ['drum & bass', 'Vaporwave'] });
+        await wait(100);
+
+        check('a track tagged with a hidden genre (case-insensitive match) is minimized', minimized('row-genre'), true);
+        check('a track tagged with a genre NOT on the list is left alone', minimized('row-other-genre'), false);
+        check(
+          'the minimized row label shows the title and the genre as SoundCloud cases it, not the lowercase match form',
+          document.getElementById('row-genre').querySelector('.scsm-row-summary-text').textContent,
+          'Genre Tagged Track — hidden: tagged "Drum & Bass"'
+        );
+
+        // ---- idempotency ----
+        window.SCSMDom.rescan();
+        await wait(50);
+        check('rescanning does not duplicate anything odd', minimized('row-genre'), true);
+
+        // ---- the "show" link restores a row and it STAYS shown ----
+        document.getElementById('row-genre').querySelector('.scsm-row-show-link').click();
+        await wait(150);
+        check('clicking "show" restores the row and it STAYS shown', minimized('row-genre'), false);
+        window.SCSMDom.rescan();
+        await wait(100);
+        check('a later, unrelated rescan does not re-hide a dismissed row', minimized('row-genre'), false);
+
+        // ---- toggling off restores the dismissed row ----
+        await window.SCSMSettings.set({ hideGenres: false });
+        await wait(30);
+        check('toggling off restores the dismissed row', minimized('row-genre'), false);
+
+        // ---- toggling back on re-minimizes it (clean slate) AND re-adds Old Repost Track's genre to the list ----
+        await window.SCSMSettings.set({ hideGenres: true, hiddenGenres: ['drum & bass', 'Trap'] });
+        await wait(100);
+        check('toggling back on re-minimizes a previously-dismissed row', minimized('row-genre'), true);
+        check('a genre ADDED to the list while already on minimizes a previously-unaffected row', minimized('row-other-genre'), true);
+
+        // ---- removing a genre from the list restores rows tagged with it, while the other stays hidden ----
+        await window.SCSMSettings.set({ hiddenGenres: ['drum & bass'] });
+        await wait(100);
+        check('removing a genre from the list restores a row tagged only with it', minimized('row-other-genre'), false);
+        check('a row tagged with a genre still on the list stays hidden', minimized('row-genre'), true);
+
+        out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
+        out.className = failures === 0 ? 'pass' : 'fail';
+        console.log('[SCSM selfcheck]', failures === 0 ? 'ALL PASSED' : failures + ' FAILED', lines);
+      })();
+    </script>
+  </body>
+</html>
