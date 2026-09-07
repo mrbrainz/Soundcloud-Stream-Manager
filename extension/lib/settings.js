@@ -20,6 +20,7 @@
     hideOldTracksDays: 30,
     hideLongTracks: false,
     hideLongTracksMinutes: 25,
+    hideTracksInPlaylist: false,
     showSearchLinks: false,
     showDownloadButton: false,
   });

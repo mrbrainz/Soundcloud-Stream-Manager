@@ -42,6 +42,10 @@
     </div>
 
     <div class="feature">
+      <label><input type="checkbox" id="hideTracksInPlaylist"> Hide tracks already in a playlist</label>
+    </div>
+
+    <div class="feature">
       <label><input type="checkbox" id="showSearchLinks"> Show search links (Deezer, Apple Music, Beatport, Spotify)</label>
     </div>
 
@@ -131,6 +135,15 @@
           document.getElementById('showPlaylistMembership').checked,
           true
         );
+
+        // ---- new #52 toggle wires up the same as any other ----
+        const hideInPlaylist = document.getElementById('hideTracksInPlaylist');
+        check('hideTracksInPlaylist starts unchecked (default off)', hideInPlaylist.checked, false);
+        hideInPlaylist.checked = true;
+        fire(hideInPlaylist, 'change');
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        const afterHideInPlaylist = await window.SCSMSettings.get();
+        check('checking hideTracksInPlaylist persists to settings', afterHideInPlaylist.hideTracksInPlaylist, true);
 
         out.textContent = lines.join('\n') + `\n\n${failures === 0 ? 'ALL PASSED' : failures + ' FAILED'}`;
         out.className = failures === 0 ? 'pass' : 'fail';
