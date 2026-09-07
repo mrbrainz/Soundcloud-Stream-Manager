@@ -19,7 +19,7 @@ Each fixture in `fixtures/` is a plain static HTML page that:
 2. Loads the mocks (`mocks/chrome-mock.js`, `mocks/data.js`,
    `mocks/sc-api-mock.js`).
 3. Loads the **real, unmodified** extension source files
-   (`extension/lib/*.js`, `extension/content/content.js`) via plain
+   (`extension/lib/*.js`, `extension/content/features/*.js`) via plain
    `<script>` tags, in the same order `manifest.json` does.
 
 Because the mocks install `window.chrome.storage`, `window.fetch`,

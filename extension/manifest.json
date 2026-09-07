@@ -41,7 +41,6 @@
         "lib/dom.js",
         "lib/rowState.js",
         "lib/iconRow.js",
-        "content/content.js",
         "content/features/repostAge.js",
         "content/features/hideOldTracks.js",
         "content/features/hideLongTracks.js",

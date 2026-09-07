@@ -157,12 +157,12 @@
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 
     // Deferred (not synchronous, and NOT a microtask): dom.js loads and
-    // runs boot() before content.js and any feature files after it in the
-    // manifest's script list have had a chance to call onScan(). A
-    // microtask (Promise.resolve().then) is NOT enough here - browsers
-    // flush the microtask queue after EACH classic <script> finishes
-    // executing, not just once all of them have run, so a microtask-deferred
-    // rescan() still fires before the next <script> tag (content.js) even
+    // runs boot() before any feature files after it in the manifest's
+    // script list have had a chance to call onScan(). A microtask
+    // (Promise.resolve().then) is NOT enough here - browsers flush the
+    // microtask queue after EACH classic <script> finishes executing, not
+    // just once all of them have run, so a microtask-deferred rescan()
+    // still fires before the next <script> tag (e.g. repostAge.js) even
     // starts. setTimeout schedules a macrotask instead, which only runs
     // after the whole synchronous script chain (and this task) completes.
     setTimeout(rescan, 0);
