@@ -123,5 +123,10 @@ window.__SCSM_MOCK_DATA__ = {
   // drops the header from the real fetch call fails here too.
   downloadRedirects: {
     1004: 'https://cf-media.sndcdn.com/mock-signed-download-1004',
+    // A second, otherwise-untouched id for the OAuth-requirement test in
+    // downloadbutton-selfcheck.html - using 1004 there too intermittently
+    // raced against lib/api.js's own dedupe/inflight tracking for that
+    // same id from the earlier button-render step in the same test.
+    9999: 'https://cf-media.sndcdn.com/mock-signed-download-9999',
   },
 };

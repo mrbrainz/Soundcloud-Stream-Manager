@@ -10,11 +10,15 @@
 
   const LINK_CLASS = 'scsm-search-link';
 
+  // badge/badgeColor are a colored-initial stand-in for each platform's
+  // logo, not a reproduction of the actual trademarked mark - see
+  // lib/iconRow.js's createIconButton. Picked to be visually distinct from
+  // each other, not matched to any platform's official brand color.
   const PLATFORMS = [
-    { key: 'deezer', label: 'Deezer', urlFor: (q) => 'https://www.deezer.com/search/' + encodeURIComponent(q) },
-    { key: 'appleMusic', label: 'Apple Music', urlFor: (q) => 'https://music.apple.com/search?term=' + encodeURIComponent(q) },
-    { key: 'beatport', label: 'Beatport', urlFor: (q) => 'https://www.beatport.com/search?q=' + encodeURIComponent(q) },
-    { key: 'spotify', label: 'Spotify', urlFor: (q) => 'https://open.spotify.com/search/' + encodeURIComponent(q) },
+    { key: 'deezer', label: 'Deezer', badge: 'D', color: '#A855F7', urlFor: (q) => 'https://www.deezer.com/search/' + encodeURIComponent(q) },
+    { key: 'appleMusic', label: 'Apple Music', badge: 'AM', color: '#FB4570', urlFor: (q) => 'https://music.apple.com/search?term=' + encodeURIComponent(q) },
+    { key: 'beatport', label: 'Beatport', badge: 'B', color: '#10B981', urlFor: (q) => 'https://www.beatport.com/search?q=' + encodeURIComponent(q) },
+    { key: 'spotify', label: 'Spotify', badge: 'S', color: '#22C55E', urlFor: (q) => 'https://open.spotify.com/search/' + encodeURIComponent(q) },
   ];
 
   let enabled = false;
@@ -48,17 +52,13 @@
       const cls = LINK_CLASS + '-' + platform.key;
       if (container.querySelector('.' + cls)) return; // idempotent
 
-      const link = document.createElement('a');
-      link.className = LINK_CLASS + ' ' + cls;
-      link.href = platform.urlFor(query);
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      link.textContent = platform.label;
-      link.style.marginRight = '8px';
-      link.style.fontSize = '11px';
-      link.style.opacity = '0.7';
-      // Don't let the click bubble into the row's own click-to-play handler.
-      link.addEventListener('click', (e) => e.stopPropagation());
+      const link = window.SCSMIconRow.createIconButton({
+        extraClass: LINK_CLASS + ' ' + cls,
+        href: platform.urlFor(query),
+        title: 'Search "' + query + '" on ' + platform.label,
+        badgeText: platform.badge,
+        badgeColor: platform.color,
+      });
       container.appendChild(link);
     });
   }
